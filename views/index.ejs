@@ -1,29 +1,124 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>KDY's Shop - Sign-up</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/sign in.css">
-</head>
-<body>
-    <div class="card">
-        <h2>Sign-up</h2>
-        <p>Create your account</p>
-        <form>
-            <input type="text" id="userName" placeholder="Full Name">
-            <input type="email" id="userEmail" placeholder="Email Address">
-            <div class="input-container">
-                <input type="password" id="userPass" placeholder="Password">
-                <svg class="toggle-password" onclick="togglePass('userPass')" viewBox="0 0 24 24">
-                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                </svg>
-            </div>
-            <div id="msg" class="error-text"></div>
-            <button type="button" class="go-btn" onclick="checkSignup()">Sign-up</button>
-        </form>
-        <a href="login.html" class="back-link">Already have an account? <b>Log-in</b></a>
+<% layout('layouts/main') %>
+
+<!-- Hero Section -->
+<section 
+  class="relative -mx-4 sm:-mx-6 lg:-mx-8 -mt-6 px-4 sm:px-6 lg:px-8 py-24 text-black text-center overflow-hidden from-primary via-yellow-700 to-accent" 
+  style="background-color: rgb(2, 25, 88);"
+>
+  <div class="absolute inset-0 opacity-10">
+    <div class="absolute top-10 left-10 w-32 h-32 bg-secondary rounded-full blur-3xl"></div>
+    <div class="absolute bottom-10 right-10 w-48 h-48 bg-accent rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="relative z-10 max-w-3xl mx-auto">
+    <h1 class="text-4xl md:text-6xl font-extrabold text-white mb-4 leading-tight">
+      Turn Your Ideas Into <span class="text-gray-400">Beautiful Crafts</span>
+    </h1>
+    <p class="text-lg md:text-xl text-white mb-8">
+      Customized souvenirs, keychains, mugs, t-shirts & more designed just for you!
+    </p>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+      <a 
+        href="/auth/register" 
+        class="bg-blue-500 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-full transition shadow-lg text-lg"
+      >
+        <i class="fas fa-rocket mr-2"></i> Get Started
+      </a>
+      <a 
+        href="/auth/login" 
+        class="border-2 border-white hover:bg-blue-700 text-white hover:text-white font-semibold px-8 py-3 rounded-full transition text-lg"
+      >
+        <i class="fas fa-sign-in-alt mr-2"></i> Login
+      </a>
     </div>
-    <script src="sign in.js"></script>
-</body>
-</html>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section class="py-16">
+  <h2 class="text-3xl font-bold text-center text-dark mb-12">How It Works</h2>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+    <!-- Step 1 -->
+    <div class="text-center">
+      <div class="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
+        <i class="fas fa-search text-primary text-2xl"></i>
+      </div>
+      <h3 class="font-bold text-lg mb-2">1. Browse Products</h3>
+      <p class="text-gray-500 text-sm">
+        Explore our catalog of mugs, keychains, shirts & more.
+      </p>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="text-center">
+      <div class="w-16 h-16 mx-auto bg-accent/10 rounded-full flex items-center justify-center mb-4">
+        <i class="fas fa-paint-brush text-accent text-2xl"></i>
+      </div>
+      <h3 class="font-bold text-lg mb-2">2. Customize</h3>
+      <p class="text-gray-500 text-sm">
+        Upload your inspo photos, choose colors, add text & designs.
+      </p>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="text-center">
+      <div class="w-16 h-16 mx-auto bg-secondary/10 rounded-full flex items-center justify-center mb-4">
+        <i class="fas fa-shopping-cart text-secondary text-2xl"></i>
+      </div>
+      <h3 class="font-bold text-lg mb-2">3. Place Order</h3>
+      <p class="text-gray-500 text-sm">
+        Add to cart, checkout, and confirm your order.
+      </p>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="text-center">
+      <div class="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
+        <i class="fas fa-truck text-green-600 text-2xl"></i>
+      </div>
+      <h3 class="font-bold text-lg mb-2">4. Track & Receive</h3>
+      <p class="text-gray-500 text-sm">
+        Track your order in real-time until it's delivered.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Categories Preview -->
+<section class="py-16 bg-white -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 rounded-xl">
+  <h2 class="text-3xl font-bold text-center text-dark mb-12">Our Products</h2>
+
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-6 max-w-5xl mx-auto">
+    <!-- Mugs -->
+    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 text-center card-hover cursor-pointer">
+      <i class="fas fa-mug-hot text-primary text-4xl mb-3"></i>
+      <h3 class="font-semibold">Mugs</h3>
+    </div>
+
+    <!-- Keychains -->
+    <div class="bg-gradient-to-br from-pink-50 to-pink-100 rounded-2xl p-6 text-center card-hover cursor-pointer">
+      <i class="fas fa-key text-accent text-4xl mb-3"></i>
+      <h3 class="font-semibold">Keychains</h3>
+    </div>
+
+    <!-- T-Shirts -->
+    <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl p-6 text-center card-hover cursor-pointer">
+      <i class="fas fa-shirt text-secondary text-4xl mb-3"></i>
+      <h3 class="font-semibold">T-Shirts</h3>
+    </div>
+
+    <!-- Tumblers -->
+    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 text-center card-hover cursor-pointer">
+      <i class="fas fa-glass-water text-blue-500 text-4xl mb-3"></i>
+      <h3 class="font-semibold">Tumblers</h3>
+    </div>
+
+    <!-- Others -->
+    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 text-center card-hover cursor-pointer">
+      <i class="fas fa-gift text-green-500 text-4xl mb-3"></i>
+      <h3 class="font-semibold">Others</h3>
+    </div>
+  </div>
+</section>

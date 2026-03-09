@@ -1,0 +1,98 @@
+<nav class="bg-dark shadow-lg sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <!-- Logo -->
+      <a href="<%= user ? (user.role === 'admin' ? '/admin/dashboard' : '/customer/shop') : '/' %>" class="flex items-center gap-2">
+        <i class="fas fa-palette text-white text-2xl"></i>
+        <span class="text-white font-bold text-lg tracking-wide">KDY's Arts & Crafts</span>
+      </a>
+
+      <!-- Desktop Nav -->
+      <div class="hidden md:flex items-center gap-6">
+        <% if (user) { %>
+          <% if (user.role === 'customer') { %>
+            <a href="/customer/shop" class="text-gray-300 hover:text-blue-500 transition <%= active === 'shop' ? 'text-blue-500 font-semibold' : '' %>">
+              <i class="fas fa-store mr-1"></i> Shop
+            </a>
+            <a href="/customer/cart" class="text-gray-300 hover:text-blue-500 transition <%= active === 'cart' ? 'text-blue-500 font-semibold' : '' %>">
+              <i class="fas fa-shopping-cart mr-1"></i> Cart
+            </a>
+            <a href="/customer/orders" class="text-gray-300 hover:text-blue-500 transition <%= active === 'orders' ? 'text-blue-500 font-semibold' : '' %>">
+              <i class="fas fa-box mr-1"></i> My Orders
+            </a>
+            <a href="/customer/notifications" class="text-gray-300 hover:text-blue-500 transition <%= active === 'notifications' ? 'text-blue-500 font-semibold' : '' %>">
+              <i class="fas fa-bell mr-1"></i> Notifications
+            </a>
+          <% } else if (user.role === 'admin') { %>
+            <a href="/admin/dashboard" class="text-gray-300 hover:text-blue-500 transition <%= active === 'dashboard' ? 'text-blue-500 font-semibold' : '' %>">
+              <i class="fas fa-chart-line mr-1"></i> Dashboard
+            </a>
+            <a href="/admin/orders" class="text-gray-300 hover:text-blue-500 transition <%= active === 'orders' ? 'text-blue-500 font-semibold' : '' %>">
+              <i class="fas fa-clipboard-list mr-1"></i> Orders
+            </a>
+            <a href="/admin/products" class="text-gray-300 hover:text-blue-500 transition <%= active === 'products' ? 'text-blue-500 font-semibold' : '' %>">
+              <i class="fas fa-boxes-stacked mr-1"></i> Products
+            </a>
+            <a href="/admin/customers" class="text-gray-300 hover:text-blue-500 transition <%= active === 'customers' ? 'text-blue-500 font-semibold' : '' %>">
+              <i class="fas fa-users mr-1"></i> Customers
+            </a>
+          <% } %>
+
+          <!-- User Dropdown -->
+          <div class="relative group">
+            <button class="flex items-center gap-2 text-gray-300 hover:text-white transition">
+              <% if (user.profileImage) { %>
+                <img src="<%= user.profileImage %>" class="w-8 h-8 rounded-full object-cover border-2 border-secondary" />
+              <% } else { %>
+                <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">
+                  <%= user.firstName ? user.firstName.charAt(0).toUpperCase() : 'U' %>
+                </div>
+              <% } %>
+              <span class="text-sm"><%= user.firstName || user.email %></span>
+              <i class="fas fa-chevron-down text-md"></i>
+            </button>
+            <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 hidden group-hover:block z-50">
+              <a href="<%= user.role === 'admin' ? '/admin/profile' : '/customer/profile' %>" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                <i class="fas fa-user mr-2"></i> Profile
+              </a>
+              <hr class="my-1">
+              <a href="/auth/logout" class="block px-4 py-2 text-red-500 hover:bg-red-50">
+                <i class="fas fa-sign-out-alt mr-2"></i> Logout
+              </a>
+            </div>
+          </div>
+        <% } else { %>
+          <a href="/auth/login" class="text-gray-300 hover:text-white transition rounded-lg underline decoration-2 decoration-white">Login</a>
+          <a href="/auth/register" class="bg-blue-500 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition">Register</a>
+        <% } %>
+      </div>
+
+      <!-- Mobile Menu Button -->
+      <button id="mobile-menu-btn" class="md:hidden text-gray-300 hover:text-white">
+        <i class="fas fa-bars text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden pb-4">
+      <% if (user) { %>
+        <% if (user.role === 'customer') { %>
+          <a href="/customer/shop" class="block py-2 text-gray-300 hover:text-blue-500">Shop</a>
+          <a href="/customer/cart" class="block py-2 text-gray-300 hover:text-blue-500">Cart</a>
+          <a href="/customer/orders" class="block py-2 text-gray-300 hover:text-blue-500">My Orders</a>
+          <a href="/customer/notifications" class="block py-2 text-gray-300 hover:text-blue-500">Notifications</a>
+        <% } else if (user.role === 'admin') { %>
+          <a href="/admin/dashboard" class="block py-2 text-gray-300 hover:text-blue-500">Dashboard</a>
+          <a href="/admin/orders" class="block py-2 text-gray-300 hover:text-blue-500">Orders</a>
+          <a href="/admin/products" class="block py-2 text-gray-300 hover:text-blue-500">Products</a>
+          <a href="/admin/customers" class="block py-2 text-gray-300 hover:text-blue-500">Customers</a>
+        <% } %>
+        <a href="<%= user.role === 'admin' ? '/admin/profile' : '/customer/profile' %>" class="block py-2 text-gray-300 hover:text-blue-500">Profile</a>
+        <a href="/auth/logout" class="block py-2 text-red-400 hover:text-red-300">Logout</a>
+      <% } else { %>
+        <a href="/auth/login" class="block py-2 text-gray-300 hover:text-white">Login</a>
+        <a href="/auth/register" class="block py-2 text-blue-500 hover:text-yellow-400">Register</a>
+      <% } %>
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,76 @@
+<% layout('layouts/main') %>
+
+<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+  <h1 class="text-3xl font-bold text-dark"><i class="fas fa-clipboard-list text-primary mr-2"></i>Manage Orders</h1>
+  <form action="/admin/orders" method="GET" class="flex gap-3 mt-4 md:mt-0">
+    <div class="relative">
+      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+      <input type="text" name="search" value="<%= typeof search !== 'undefined' ? search : '' %>" placeholder="Search order #..."
+        class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none w-full sm:w-52" />
+    </div>
+    <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none">
+      <option value="">All Status</option>
+      <option value="pending" <%= typeof statusFilter !== 'undefined' && statusFilter === 'pending' ? 'selected' : '' %>>Pending</option>
+      <option value="processing" <%= typeof statusFilter !== 'undefined' && statusFilter === 'processing' ? 'selected' : '' %>>Processing</option>
+      <option value="ready" <%= typeof statusFilter !== 'undefined' && statusFilter === 'ready' ? 'selected' : '' %>>Ready</option>
+      <option value="shipped" <%= typeof statusFilter !== 'undefined' && statusFilter === 'shipped' ? 'selected' : '' %>>Shipped</option>
+      <option value="delivered" <%= typeof statusFilter !== 'undefined' && statusFilter === 'delivered' ? 'selected' : '' %>>Delivered</option>
+      <option value="cancelled" <%= typeof statusFilter !== 'undefined' && statusFilter === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+    </select>
+    <button type="submit" class="bg-primary hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition">Filter</button>
+  </form>
+</div>
+
+<% if (typeof orders !== 'undefined' && orders.length > 0) { %>
+  <div class="bg-white rounded-xl shadow-md overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-gray-50 text-gray-500 text-left">
+          <th class="px-6 py-4 font-medium">Order #</th>
+          <th class="px-6 py-4 font-medium">Customer</th>
+          <th class="px-6 py-4 font-medium">Amount</th>
+          <th class="px-6 py-4 font-medium">Status</th>
+          <th class="px-6 py-4 font-medium">Date</th>
+          <th class="px-6 py-4 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% orders.forEach(order => { %>
+          <%
+            let osc = 'gray';
+            if (order.status === 'pending') osc = 'yellow';
+            else if (order.status === 'processing') osc = 'blue';
+            else if (order.status === 'ready') osc = 'purple';
+            else if (order.status === 'shipped') osc = 'indigo';
+            else if (order.status === 'delivered') osc = 'green';
+            else if (order.status === 'cancelled') osc = 'red';
+          %>
+          <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+            <td class="px-6 py-4 font-bold">#<%= order.orderNumber %></td>
+            <td class="px-6 py-4">
+              <% if (order.userId) { %>
+                <p class="font-medium"><%= order.userId.firstName %> <%= order.userId.lastName %></p>
+                <p class="text-gray-400 text-xs"><%= order.userId.email %></p>
+              <% } else { %>
+                <span class="text-gray-400">N/A</span>
+              <% } %>
+            </td>
+            <td class="px-6 py-4 font-bold text-primary">&#8369;<%= order.totalAmount.toFixed(2) %></td>
+            <td class="px-6 py-4">
+              <span class="px-3 py-1 rounded-full text-xs font-semibold bg-<%= osc %>-100 text-<%= osc %>-700 capitalize"><%= order.status %></span>
+            </td>
+            <td class="px-6 py-4 text-gray-500"><%= new Date(order.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
+            <td class="px-6 py-4">
+              <a href="/admin/orders/<%= order._id %>" class="text-primary hover:underline font-medium"><i class="fas fa-eye mr-1"></i>View</a>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+<% } else { %>
+  <div class="text-center py-20 bg-white rounded-xl shadow-md">
+    <i class="fas fa-clipboard text-gray-300 text-6xl mb-4"></i>
+    <h2 class="text-xl font-semibold text-gray-500">No orders found</h2>
+  </div>
+<% } %>

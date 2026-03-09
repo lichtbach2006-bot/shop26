@@ -1,0 +1,76 @@
+<% layout('layouts/main') %>
+
+<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+  <h1 class="text-3xl font-bold text-dark"><i class="fas fa-boxes-stacked text-primary mr-2"></i>Manage Products</h1>
+  <a href="/admin/products/add" class="mt-4 md:mt-0 inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-lg transition">
+    <i class="fas fa-plus mr-2"></i>Add Product
+  </a>
+</div>
+
+<form action="/admin/products" method="GET" class="flex flex-wrap gap-3 mb-6">
+  <div class="relative">
+    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+    <input type="text" name="search" value="<%= typeof search !== 'undefined' ? search : '' %>" placeholder="Search products..."
+      class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none w-full sm:w-52" />
+  </div>
+  <select name="category" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none">
+    <option value="">All Categories</option>
+    <option value="mug" <%= typeof categoryFilter !== 'undefined' && categoryFilter === 'mug' ? 'selected' : '' %>>Mugs</option>
+    <option value="keychain" <%= typeof categoryFilter !== 'undefined' && categoryFilter === 'keychain' ? 'selected' : '' %>>Keychains</option>
+    <option value="shirt" <%= typeof categoryFilter !== 'undefined' && categoryFilter === 'shirt' ? 'selected' : '' %>>Shirts</option>
+    <option value="tumbler" <%= typeof categoryFilter !== 'undefined' && categoryFilter === 'tumbler' ? 'selected' : '' %>>Tumblers</option>
+    <option value="others" <%= typeof categoryFilter !== 'undefined' && categoryFilter === 'others' ? 'selected' : '' %>>Others</option>
+  </select>
+  <button type="submit" class="bg-primary hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition">Filter</button>
+</form>
+
+<% if (typeof products !== 'undefined' && products.length > 0) { %>
+  <div class="bg-white rounded-xl shadow-md overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-gray-50 text-gray-500 text-left">
+          <th class="px-6 py-4 font-medium">Product</th>
+          <th class="px-6 py-4 font-medium">Category</th>
+          <th class="px-6 py-4 font-medium">Price</th>
+          <th class="px-6 py-4 font-medium">Stock</th>
+          <th class="px-6 py-4 font-medium">Status</th>
+          <th class="px-6 py-4 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% products.forEach(product => { %>
+          <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-3">
+                <img src="<%= product.imageUrl %>" class="w-12 h-12 rounded-lg object-cover" />
+                <span class="font-semibold"><%= product.name %></span>
+              </div>
+            </td>
+            <td class="px-6 py-4 capitalize"><%= product.category %></td>
+            <td class="px-6 py-4 font-bold text-primary">&#8369;<%= product.basePrice.toFixed(2) %></td>
+            <td class="px-6 py-4"><%= product.stock %></td>
+            <td class="px-6 py-4">
+              <span class="px-3 py-1 rounded-full text-xs font-semibold <%= product.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' %> capitalize">
+                <%= product.status === 'available' ? 'Available' : 'Out of Stock' %>
+              </span>
+            </td>
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-3">
+                <a href="/admin/products/<%= product._id %>/edit" class="text-blue-500 hover:underline"><i class="fas fa-edit"></i></a>
+                <form action="/admin/products/<%= product._id %>/archive" method="POST" onsubmit="return confirm('Archive this product?')">
+                  <button type="submit" class="text-red-400 hover:text-red-600"><i class="fas fa-archive"></i></button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+<% } else { %>
+  <div class="text-center py-20 bg-white rounded-xl shadow-md">
+    <i class="fas fa-box-open text-gray-300 text-6xl mb-4"></i>
+    <h2 class="text-xl font-semibold text-gray-500">No products found</h2>
+    <a href="/admin/products/add" class="inline-block mt-4 text-primary hover:underline">Add your first product</a>
+  </div>
+<% } %>

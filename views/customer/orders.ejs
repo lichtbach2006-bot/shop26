@@ -1,0 +1,63 @@
+<% layout('layouts/main') %>
+
+<h1 class="text-3xl font-bold text-dark mb-6"><i class="fas fa-box text-primary mr-2"></i>My Orders</h1>
+
+<!-- Status Filter -->
+<div class="flex flex-wrap gap-2 mb-6">
+  <a href="/customer/orders" class="px-4 py-2 rounded-full text-sm font-medium transition <%= typeof statusFilter === 'undefined' || !statusFilter ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300' %>">All</a>
+  <a href="/customer/orders?status=pending" class="px-4 py-2 rounded-full text-sm font-medium transition <%= typeof statusFilter !== 'undefined' && statusFilter === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300' %>">Pending</a>
+  <a href="/customer/orders?status=processing" class="px-4 py-2 rounded-full text-sm font-medium transition <%= typeof statusFilter !== 'undefined' && statusFilter === 'processing' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300' %>">Processing</a>
+  <a href="/customer/orders?status=ready" class="px-4 py-2 rounded-full text-sm font-medium transition <%= typeof statusFilter !== 'undefined' && statusFilter === 'ready' ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300' %>">Ready</a>
+  <a href="/customer/orders?status=shipped" class="px-4 py-2 rounded-full text-sm font-medium transition <%= typeof statusFilter !== 'undefined' && statusFilter === 'shipped' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300' %>">Shipped</a>
+  <a href="/customer/orders?status=delivered" class="px-4 py-2 rounded-full text-sm font-medium transition <%= typeof statusFilter !== 'undefined' && statusFilter === 'delivered' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300' %>">Delivered</a>
+  <a href="/customer/orders?status=cancelled" class="px-4 py-2 rounded-full text-sm font-medium transition <%= typeof statusFilter !== 'undefined' && statusFilter === 'cancelled' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300' %>">Cancelled</a>
+</div>
+
+<% if (typeof orders !== 'undefined' && orders.length > 0) { %>
+  <div class="space-y-4">
+    <% orders.forEach(order => { %>
+      <%
+        let statusColor = 'gray';
+        let statusIcon = 'clock';
+        if (order.status === 'pending') { statusColor = 'yellow'; statusIcon = 'clock'; }
+        else if (order.status === 'processing') { statusColor = 'blue'; statusIcon = 'cog fa-spin'; }
+        else if (order.status === 'ready') { statusColor = 'purple'; statusIcon = 'check'; }
+        else if (order.status === 'shipped') { statusColor = 'indigo'; statusIcon = 'truck'; }
+        else if (order.status === 'delivered') { statusColor = 'green'; statusIcon = 'check-double'; }
+        else if (order.status === 'cancelled') { statusColor = 'red'; statusIcon = 'times'; }
+      %>
+      <a href="/customer/orders/<%= order._id %>" class="block bg-white rounded-xl shadow-md p-5 hover:shadow-lg transition">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-3">
+              <h3 class="font-bold text-dark text-lg">Order #<%= order.orderNumber %></h3>
+              <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-<%= statusColor %>-100 text-<%= statusColor %>-700 capitalize">
+                <i class="fas fa-<%= statusIcon %>"></i> <%= order.status %>
+              </span>
+            </div>
+            <p class="text-gray-500 text-sm mt-1">
+              <i class="fas fa-calendar-alt mr-1"></i>
+              <%= new Date(order.createdAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) %>
+            </p>
+            <% if (order.notes) { %>
+              <p class="text-gray-400 text-sm mt-1"><i class="fas fa-sticky-note mr-1"></i>"<%= order.notes %>"</p>
+            <% } %>
+          </div>
+          <div class="text-right">
+            <span class="text-primary font-bold text-2xl">&#8369;<%= order.totalAmount.toFixed(2) %></span>
+            <p class="text-gray-400 text-xs mt-1"><i class="fas fa-arrow-right mr-1"></i>View Details</p>
+          </div>
+        </div>
+      </a>
+    <% }) %>
+  </div>
+<% } else { %>
+  <div class="text-center py-20">
+    <i class="fas fa-box-open text-gray-300 text-6xl mb-4"></i>
+    <h2 class="text-xl font-semibold text-gray-500">No orders yet</h2>
+    <p class="text-gray-400 mt-2">Start shopping and place your first order!</p>
+    <a href="/customer/shop" class="inline-block mt-6 bg-primary hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-lg transition">
+      <i class="fas fa-store mr-2"></i>Browse Products
+    </a>
+  </div>
+<% } %>

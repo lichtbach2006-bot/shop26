@@ -1,0 +1,66 @@
+<% layout('layouts/main') %>
+
+<!-- Shop Header -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+  <div>
+    <h1 class="text-3xl font-bold text-dark"><i class="fas fa-store text-primary mr-2"></i>Shop</h1>
+    <p class="text-gray-500 mt-1">Browse our customizable products</p>
+  </div>
+
+  <!-- Search & Filter -->
+  <form action="/customer/shop" method="GET" class="flex flex-col sm:flex-row gap-3 mt-4 md:mt-0">
+    <div class="relative">
+      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+      <input type="text" name="search" value="<%= typeof search !== 'undefined' ? search : '' %>" placeholder="Search products..."
+        class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none w-full sm:w-64" />
+    </div>
+    <select name="category" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none">
+      <option value="">All Categories</option>
+      <option value="mug" <%= typeof category !== 'undefined' && category === 'mug' ? 'selected' : '' %>>Mugs</option>
+      <option value="keychain" <%= typeof category !== 'undefined' && category === 'keychain' ? 'selected' : '' %>>Keychains</option>
+      <option value="shirt" <%= typeof category !== 'undefined' && category === 'shirt' ? 'selected' : '' %>>T-Shirts</option>
+      <option value="tumbler" <%= typeof category !== 'undefined' && category === 'tumbler' ? 'selected' : '' %>>Tumblers</option>
+      <option value="others" <%= typeof category !== 'undefined' && category === 'others' ? 'selected' : '' %>>Others</option>
+    </select>
+    <button type="submit" class="bg-primary hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition">
+      <i class="fas fa-filter mr-1"></i>Filter
+    </button>
+  </form>
+</div>
+
+<!-- Products Grid -->
+<% if (typeof products !== 'undefined' && products.length > 0) { %>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <% products.forEach(product => { %>
+      <div class="bg-white rounded-2xl shadow-md overflow-hidden card-hover">
+        <div class="relative">
+          <img src="<%= product.imageUrl %>" alt="<%= product.name %>" class="w-full h-52 object-cover" />
+          <span class="absolute top-3 left-3 bg-primary/90 text-white text-xs px-3 py-1 rounded-full capitalize"><%= product.category %></span>
+          <% if (product.status === 'out_of_stock') { %>
+            <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <span class="bg-red-500 text-white px-4 py-1 rounded-full font-semibold text-sm">Out of Stock</span>
+            </div>
+          <% } %>
+        </div>
+        <div class="p-4">
+          <h3 class="font-bold text-lg text-dark truncate"><%= product.name %></h3>
+          <p class="text-gray-500 text-sm mt-1 line-clamp-2"><%= product.description %></p>
+          <div class="flex items-center justify-between mt-4">
+            <span class="text-primary font-bold text-xl">&#8369;<%= product.basePrice.toFixed(2) %></span>
+            <% if (product.status === 'available') { %>
+              <a href="/customer/shop/<%= product._id %>" class="bg-blue-500 hover:bg-blue-700 text- font-semibold px-4 py-2 rounded-lg text-sm transition">
+                <i class="fas fa-eye mr-1"></i>View
+              </a>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+<% } else { %>
+  <div class="text-center py-20">
+    <i class="fas fa-box-open text-gray-300 text-6xl mb-4"></i>
+    <h2 class="text-xl font-semibold text-gray-500">No products found</h2>
+    <p class="text-gray-400 mt-2">Try adjusting your search or filter.</p>
+  </div>
+<% } %>

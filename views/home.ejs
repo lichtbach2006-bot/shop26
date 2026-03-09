@@ -1,2 +1,22 @@
-<% layout('layout') %>
-home
+<% layout('layouts/main') %>
+
+<div class="text-center py-16">
+  <h1 class="text-4xl font-bold text-dark mb-4">Welcome to <span class="text-primary">KDY's Arts & Crafts</span></h1>
+  <p class="text-gray-500 text-lg mb-8">Your one-stop shop for customized souvenirs!</p>
+
+  <% if (user) { %>
+    <% if (user.role === 'customer') { %>
+      <a href="/customer/shop" class="bg-secondary hover:bg-yellow-400 text-dark font-bold px-8 py-3 rounded-full transition shadow-lg text-lg">
+        <i class="fas fa-store mr-2"></i>Start Shopping
+      </a>
+    <% } else if (user.role === 'admin') { %>
+      <a href="/admin/dashboard" class="bg-primary hover:bg-purple-700 text-white font-bold px-8 py-3 rounded-full transition shadow-lg text-lg">
+        <i class="fas fa-chart-line mr-2"></i>Go to Dashboard
+      </a>
+    <% } %>
+  <% } else { %>
+    <a href="/auth/login" class="bg-primary hover:bg-purple-700 text-white font-bold px-8 py-3 rounded-full transition shadow-lg text-lg">
+      <i class="fas fa-sign-in-alt mr-2"></i>Login to Continue
+    </a>
+  <% } %>
+</div>

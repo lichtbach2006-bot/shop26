@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/lichtbach2006-bot/order26#readme",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "cloudinary": "^1.41.3",
     "connect-flash": "^0.1.1",
     "connect-mongodb-session": "^5.0.0",
@@ -29,7 +30,7 @@
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "helmet": "^8.1.0",
-    "mongoose": "^9.2.1",
+    "mongoose": "^8.19.2",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",

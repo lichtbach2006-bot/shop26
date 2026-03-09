@@ -1,0 +1,51 @@
+<% layout('layouts/main') %>
+
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-3xl font-bold text-dark"><i class="fas fa-bell text-primary mr-2"></i>Notifications</h1>
+  <% if (typeof notifications !== 'undefined' && notifications.length > 0) { %>
+    <form action="/customer/notifications/read-all" method="POST">
+      <button type="submit" class="text-sm text-primary hover:underline"><i class="fas fa-check-double mr-1"></i>Mark all as read</button>
+    </form>
+  <% } %>
+</div>
+
+<% if (typeof notifications !== 'undefined' && notifications.length > 0) { %>
+  <div class="space-y-3">
+    <% notifications.forEach(notif => { %>
+      <%
+        let icon = 'info-circle', iconColor = 'blue';
+        if (notif.type === 'order_update') { icon = 'box'; iconColor = 'primary'; }
+        else if (notif.type === 'promo') { icon = 'tag'; iconColor = 'accent'; }
+        else if (notif.type === 'system') { icon = 'cog'; iconColor = 'gray'; }
+      %>
+      <div class="bg-white rounded-xl shadow-sm p-4 flex items-start gap-4 border-l-4 <%= notif.isRead ? 'border-gray-200' : 'border-primary bg-purple-50/30' %> transition hover:shadow-md">
+        <div class="w-10 h-10 rounded-full bg-<%= iconColor === 'primary' ? 'purple' : iconColor %>-100 flex items-center justify-center flex-shrink-0 mt-1">
+          <i class="fas fa-<%= icon %> text-<%= iconColor === 'primary' ? 'primary' : iconColor %>-500"></i>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-start justify-between gap-2">
+            <h3 class="font-semibold text-dark <%= notif.isRead ? '' : 'font-bold' %>"><%= notif.title %></h3>
+            <% if (!notif.isRead) { %>
+              <span class="w-2.5 h-2.5 rounded-full bg-primary flex-shrink-0 mt-1.5"></span>
+            <% } %>
+          </div>
+          <p class="text-gray-600 text-sm mt-1"><%= notif.message %></p>
+          <p class="text-gray-400 text-xs mt-2"><i class="fas fa-clock mr-1"></i><%= new Date(notif.createdAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) %></p>
+        </div>
+        <% if (!notif.isRead) { %>
+          <form action="/customer/notifications/<%= notif._id %>/read" method="POST">
+            <button type="submit" class="text-gray-400 hover:text-primary transition text-sm" title="Mark as read">
+              <i class="fas fa-check"></i>
+            </button>
+          </form>
+        <% } %>
+      </div>
+    <% }) %>
+  </div>
+<% } else { %>
+  <div class="text-center py-20">
+    <i class="fas fa-bell-slash text-gray-300 text-6xl mb-4"></i>
+    <h2 class="text-xl font-semibold text-gray-500">No notifications</h2>
+    <p class="text-gray-400 mt-2">You're all caught up!</p>
+  </div>
+<% } %>

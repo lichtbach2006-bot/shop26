@@ -1,0 +1,80 @@
+<% layout('layouts/main') %>
+
+<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+  <h1 class="text-3xl font-bold text-dark"><i class="fas fa-users text-primary mr-2"></i>Manage Customers</h1>
+  <form action="/admin/customers" method="GET" class="flex gap-3 mt-4 md:mt-0">
+    <div class="relative">
+      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+      <input type="text" name="search" value="<%= typeof search !== 'undefined' ? search : '' %>" placeholder="Search customers..."
+        class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none w-full sm:w-52" />
+    </div>
+    <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none">
+      <option value="">All Status</option>
+      <option value="active" <%= typeof statusFilter !== 'undefined' && statusFilter === 'active' ? 'selected' : '' %>>Active</option>
+      <option value="blocked" <%= typeof statusFilter !== 'undefined' && statusFilter === 'blocked' ? 'selected' : '' %>>Blocked</option>
+    </select>
+    <button type="submit" class="bg-primary hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition">Filter</button>
+  </form>
+</div>
+
+<% if (typeof customers !== 'undefined' && customers.length > 0) { %>
+  <div class="bg-white rounded-xl shadow-md overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-gray-50 text-gray-500 text-left">
+          <th class="px-6 py-4 font-medium">Customer</th>
+          <th class="px-6 py-4 font-medium">Email</th>
+          <th class="px-6 py-4 font-medium">Phone</th>
+          <th class="px-6 py-4 font-medium">Status</th>
+          <th class="px-6 py-4 font-medium">Joined</th>
+          <th class="px-6 py-4 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% customers.forEach(cust => { %>
+          <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-3">
+                <% if (cust.profileImage) { %>
+                  <img src="<%= cust.profileImage %>" class="w-9 h-9 rounded-full object-cover" />
+                <% } else { %>
+                  <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">
+                    <%= cust.firstName.charAt(0) %>
+                  </div>
+                <% } %>
+                <span class="font-semibold"><%= cust.firstName %> <%= cust.lastName %></span>
+              </div>
+            </td>
+            <td class="px-6 py-4 text-gray-500"><%= cust.email %></td>
+            <td class="px-6 py-4 text-gray-500"><%= cust.phoneNumber %></td>
+            <td class="px-6 py-4">
+              <span class="px-3 py-1 rounded-full text-xs font-semibold <%= cust.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' %> capitalize">
+                <%= cust.status %>
+              </span>
+            </td>
+            <td class="px-6 py-4 text-gray-500"><%= new Date(cust.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-3">
+                <a href="/admin/customers/<%= cust._id %>" class="text-primary hover:underline"><i class="fas fa-eye"></i></a>
+                <% if (cust.status === 'active') { %>
+                  <form action="/admin/customers/<%= cust._id %>/block" method="POST" onsubmit="return confirm('Block this customer?')">
+                    <button type="submit" class="text-red-400 hover:text-red-600" title="Block"><i class="fas fa-ban"></i></button>
+                  </form>
+                <% } else { %>
+                  <form action="/admin/customers/<%= cust._id %>/unblock" method="POST">
+                    <button type="submit" class="text-green-400 hover:text-green-600" title="Unblock"><i class="fas fa-check-circle"></i></button>
+                  </form>
+                <% } %>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+<% } else { %>
+  <div class="text-center py-20 bg-white rounded-xl shadow-md">
+    <i class="fas fa-users text-gray-300 text-6xl mb-4"></i>
+    <h2 class="text-xl font-semibold text-gray-500">No customers found</h2>
+  </div>
+<% } %>

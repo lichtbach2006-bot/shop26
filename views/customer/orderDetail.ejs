@@ -1,0 +1,165 @@
+<% layout('layouts/main') %>
+
+<div class="mb-4 flex items-center justify-between width-full">
+  <a href="/customer/orders" class="text-primary hover:underline text-sm"><i class="fas fa-arrow-left mr-1"></i>Back to My Orders</a> 
+  <form action="/customer/orders/<%= order._id %>/cancel" method="POST"
+      onsubmit="return confirm('Are you sure you want to cancel this order?');">
+  <button 
+    type="submit"
+    class="px-3 py-2 bg-red-500 hover:bg-red-700 active:bg-red-700 
+           text-white text-sm font-semibold rounded-md  
+           transition duration-200 ease-in-out">
+    Cancel Order
+  </button>
+</form>
+
+</div>
+
+
+<!-- Order Header -->
+<div class="bg-white rounded-xl shadow-md p-6 mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-dark">Order #<%= order.orderNumber %></h1>
+      <p class="text-gray-500 text-sm mt-1">
+        Placed on <%= new Date(order.createdAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+      </p>
+    </div>
+    <div class="text-right">
+      <%
+        let sc = 'gray', si = 'clock';
+        if (order.status === 'pending') { sc = 'yellow'; si = 'clock'; }
+        else if (order.status === 'processing') { sc = 'blue'; si = 'cog'; }
+        else if (order.status === 'ready') { sc = 'purple'; si = 'check'; }
+        else if (order.status === 'shipped') { sc = 'indigo'; si = 'truck'; }
+        else if (order.status === 'delivered') { sc = 'green'; si = 'check-double'; }
+        else if (order.status === 'cancelled') { sc = 'red'; si = 'times'; }
+      %>
+      <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-<%= sc %>-100 text-<%= sc %>-700 capitalize">
+        <i class="fas fa-<%= si %>"></i> <%= order.status %>
+      </span>
+      <p class="text-primary font-bold text-2xl mt-2">&#8369;<%= order.totalAmount.toFixed(2) %></p>
+    </div>
+  </div>
+</div>
+
+<!-- Order Tracking Timeline -->
+<div class="bg-white rounded-xl shadow-md p-6 mb-6">
+  <h2 class="text-lg font-bold text-dark mb-6"><i class="fas fa-route text-primary mr-2"></i>Order Tracking</h2>
+  <%
+    const steps = ['pending', 'processing', 'ready', 'shipped', 'delivered'];
+    const currentIdx = steps.indexOf(order.status);
+    const isCancelled = order.status === 'cancelled';
+  %>
+  <div class="flex items-center justify-between relative">
+    <% steps.forEach((step, i) => { %>
+      <%
+        let dotColor = 'bg-gray-300';
+        let textColor = 'text-gray-400';
+        let lineColor = 'bg-gray-200';
+        if (isCancelled) { dotColor = 'bg-red-300'; textColor = 'text-red-400'; }
+        else if (i < currentIdx) { dotColor = 'bg-green-500'; textColor = 'text-green-600'; lineColor = 'bg-green-500'; }
+        else if (i === currentIdx) { dotColor = 'bg-primary'; textColor = 'text-primary font-bold'; }
+      %>
+      <div class="flex flex-col items-center z-10 flex-1">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold <%= dotColor %> shadow">
+          <% if (i < currentIdx && !isCancelled) { %>
+            <i class="fas fa-check"></i>
+          <% } else if (i === currentIdx && !isCancelled) { %>
+            <i class="fas fa-circle text-xs animate-pulse"></i>
+          <% } else { %>
+            <span><%= i + 1 %></span>
+          <% } %>
+        </div>
+        <span class="text-xs mt-2 capitalize <%= textColor %>"><%= step %></span>
+      </div>
+      <% if (i < steps.length - 1) { %>
+        <div class="flex-1 h-1 -mx-2 mt-[-20px] <%= i < currentIdx && !isCancelled ? 'bg-green-500' : 'bg-gray-200' %> rounded"></div>
+      <% } %>
+    <% }) %>
+  </div>
+  <% if (isCancelled) { %>
+    <div class="mt-4 bg-red-50 text-red-600 px-4 py-3 rounded-lg text-center text-sm">
+      <i class="fas fa-ban mr-1"></i>This order has been cancelled.
+    </div>
+  <% } %>
+</div>
+
+<!-- Order Items -->
+<div class="bg-white rounded-xl shadow-md p-6 mb-6">
+  <h2 class="text-lg font-bold text-dark mb-4"><i class="fas fa-list text-primary mr-2"></i>Order Items</h2>
+  <% if (typeof orderItems !== 'undefined' && orderItems.length > 0) { %>
+    <div class="space-y-4">
+      <% orderItems.forEach(item => { %>
+        <div class="flex flex-col sm:flex-row gap-4 pb-4 border-b border-gray-100 last:border-0">
+          <img src="<%= item.productId.imageUrl %>" class="w-20 h-20 rounded-lg object-cover flex-shrink-0" />
+          <div class="flex-1">
+            <h3 class="font-semibold text-dark"><%= item.productId.name %></h3>
+            <div class="text-sm text-gray-500 mt-1 space-y-0.5">
+              <% if (item.selectedSize) { %><p>Size: <span class="font-medium"><%= item.selectedSize %></span></p><% } %>
+              <% if (item.selectedColor) { %><p>Color: <span class="font-medium capitalize"><%= item.selectedColor %></span></p><% } %>
+              <% if (item.customText) { %><p>Custom Text: <span class="font-medium">"<%= item.customText %>"</span></p><% } %>
+              <% if (item.customImageUrl) { %>
+                <p>Custom Image: <a href="<%= item.customImageUrl %>" target="_blank" class="text-primary hover:underline">View</a></p>
+              <% } %>
+              <p>Qty: <%= item.quantity %> x &#8369;<%= item.itemPrice.toFixed(2) %></p>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="font-bold text-primary">&#8369;<%= item.subtotal.toFixed(2) %></span>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+
+<!-- Shipping & Uploaded Files -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <!-- Shipping Info -->
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <h2 class="text-lg font-bold text-dark mb-4"><i class="fas fa-truck text-primary mr-2"></i>Shipping Details</h2>
+    <div class="space-y-2 text-sm">
+      <p><span class="text-gray-500">Address:</span> <span class="font-medium"><%= order.shippingAddress %></span></p>
+      <p><span class="text-gray-500">Contact:</span> <span class="font-medium"><%= order.contactNumber %></span></p>
+      <% if (typeof shipping !== 'undefined' && shipping) { %>
+        <hr class="my-3">
+        <p><span class="text-gray-500">Courier:</span> <span class="font-medium"><%= shipping.courierName %></span></p>
+        <p><span class="text-gray-500">Tracking #:</span> <span class="font-medium font-mono"><%= shipping.trackingNumber %></span></p>
+        <p><span class="text-gray-500">Status:</span> <span class="font-medium capitalize"><%= shipping.shippingStatus %></span></p>
+        <p><span class="text-gray-500">Est. Delivery:</span> <span class="font-medium"><%= new Date(shipping.estimatedDelivery).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) %></span></p>
+        <% if (shipping.deliveredAt) { %>
+          <p><span class="text-gray-500">Delivered:</span> <span class="font-medium text-green-600"><%= new Date(shipping.deliveredAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) %></span></p>
+        <% } %>
+      <% } else { %>
+        <p class="text-gray-400 italic mt-2">Shipping details will be available once your order is shipped.</p>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Uploaded Files -->
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <h2 class="text-lg font-bold text-dark mb-4"><i class="fas fa-images text-primary mr-2"></i>Uploaded Files</h2>
+    <% if (typeof uploadedFiles !== 'undefined' && uploadedFiles.length > 0) { %>
+      <div class="grid grid-cols-3 gap-3">
+        <% uploadedFiles.forEach(file => { %>
+          <a href="<%= file.fileUrl %>" target="_blank" class="relative group">
+            <img src="<%= file.fileUrl %>" alt="<%= file.fileName %>" class="w-full h-24 object-cover rounded-lg border-2 border-gray-200 group-hover:border-primary transition" />
+            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 rounded-lg transition flex items-center justify-center">
+              <i class="fas fa-expand text-white text-lg"></i>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <p class="text-gray-400 text-sm italic">No files uploaded for this order.</p>
+    <% } %>
+  </div>
+</div>
+
+<% if (order.notes) { %>
+  <div class="bg-white rounded-xl shadow-md p-6 mt-6">
+    <h2 class="text-lg font-bold text-dark mb-2"><i class="fas fa-sticky-note text-primary mr-2"></i>Order Notes</h2>
+    <p class="text-gray-600"><%= order.notes %></p>
+  </div>
+<% } %>

@@ -1,0 +1,101 @@
+<% layout('layouts/main') %>
+
+<%
+  const isEdit = typeof product !== 'undefined' && product;
+  const formAction = isEdit ? `/admin/products/${product._id}/update` : '/admin/products/add';
+  const pageTitle = isEdit ? 'Edit Product' : 'Add New Product';
+%>
+
+<div class="mb-4">
+  <a href="/admin/products" class="text-primary hover:underline text-sm"><i class="fas fa-arrow-left mr-1"></i>Back to Products</a>
+</div>
+
+<div class="max-w-2xl mx-auto">
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <h1 class="text-2xl font-bold text-dark mb-6"><i class="fas fa-<%= isEdit ? 'edit' : 'plus-circle' %> text-primary mr-2"></i><%= pageTitle %></h1>
+
+    <form action="<%= formAction %>" method="POST" enctype="multipart/form-data" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+        <input type="text" name="name" required value="<%= isEdit ? product.name : '' %>" placeholder="e.g. Personalized Coffee Mug"
+          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+        <select name="category" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none">
+          <option value="">Select Category</option>
+          <option value="mug" <%= isEdit && product.category === 'mug' ? 'selected' : '' %>>Mug</option>
+          <option value="keychain" <%= isEdit && product.category === 'keychain' ? 'selected' : '' %>>Keychain</option>
+          <option value="shirt" <%= isEdit && product.category === 'shirt' ? 'selected' : '' %>>Shirt</option>
+          <option value="tumbler" <%= isEdit && product.category === 'tumbler' ? 'selected' : '' %>>Tumbler</option>
+          <option value="others" <%= isEdit && product.category === 'others' ? 'selected' : '' %>>Others</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        <textarea name="description" required rows="3" placeholder="Describe the product..."
+          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition resize-none"><%= isEdit ? product.description : '' %></textarea>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Base Price (PHP)</label>
+          <input type="number" name="basePrice" required min="0" step="0.01" value="<%= isEdit ? product.basePrice : '' %>" placeholder="0.00"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+          <input type="number" name="stock" required min="0" value="<%= isEdit ? product.stock : '0' %>" placeholder="0"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Sizes <span class="text-gray-400">(comma separated, e.g. S,M,L,XL)</span></label>
+       <input 
+  type="text" 
+  name="sizes" 
+  id="sizeInput"
+  value="<%= isEdit && product.sizes ? product.sizes.join(',') : '' %>" 
+  placeholder="S,M,L,XL"
+  oninput="this.value = this.value.replace(/[0-9]/g, '').toUpperCase()"
+  pattern="[^0-9]+" 
+  title="Numbers are not allowed. Please use letters only (e.g., S, M, L, XL)."
+  required
+  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" 
+/>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Colors <span class="text-gray-400">(comma separated, e.g. red,blue,black)</span></label>
+       <input 
+  type="text" 
+  name="colors" 
+  pattern="^[a-zA-Z,\s]+$" 
+  title="Please enter only colors separated by commas (e.g., red, blue)"
+  value="<%= isEdit && product.colors ? product.colors.join(',') : '' %>" 
+  placeholder="red,blue,black"
+  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" 
+/>  </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+        <% if (isEdit && product.imageUrl) { %>
+          <div class="mb-3">
+            <img src="<%= product.imageUrl %>" class="w-32 h-32 object-cover rounded-lg border-2 border-gray-200" />
+            <p class="text-xs text-gray-400 mt-1">Current image. Upload new to replace.</p>
+          </div>
+        <% } %>
+        <input type="file" name="productImage" accept="image/*" <%= isEdit ? '' : 'required' %>
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none text-sm" />
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit" class="bg-primary hover:bg-purple-700 text-white font-semibold px-6 py-2.5 rounded-lg transition">
+          <i class="fas fa-<%= isEdit ? 'save' : 'plus' %> mr-2"></i><%= isEdit ? 'Save Changes' : 'Add Product' %>
+        </button>
+        <a href="/admin/products" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-2.5 rounded-lg transition">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>

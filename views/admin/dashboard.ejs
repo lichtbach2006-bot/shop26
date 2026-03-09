@@ -1,0 +1,151 @@
+<% layout('layouts/main') %>
+
+<h1 class="text-3xl font-bold text-dark mb-6"><i class="fas fa-chart-line text-primary mr-2"></i>Admin Dashboard</h1>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-primary">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-gray-500 text-sm">Total Orders</p>
+        <h2 class="text-3xl font-bold text-dark"><%= typeof stats !== 'undefined' ? stats.totalOrders : 0 %></h2>
+      </div>
+      <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+        <i class="fas fa-clipboard-list text-primary text-xl"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-yellow-500">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-gray-500 text-sm">Pending Orders</p>
+        <h2 class="text-3xl font-bold text-dark"><%= typeof stats !== 'undefined' ? stats.pendingOrders : 0 %></h2>
+      </div>
+      <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+        <i class="fas fa-clock text-yellow-500 text-xl"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-gray-500 text-sm">Total Revenue</p>
+        <h2 class="text-3xl font-bold text-dark">&#8369;<%= typeof stats !== 'undefined' ? stats.totalRevenue.toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '0.00' %></h2>
+      </div>
+      <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+        <i class="fas fa-peso-sign text-green-500 text-xl"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-accent">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-gray-500 text-sm">Total Customers</p>
+        <h2 class="text-3xl font-bold text-dark"><%= typeof stats !== 'undefined' ? stats.totalCustomers : 0 %></h2>
+      </div>
+      <div class="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
+        <i class="fas fa-users text-accent text-xl"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Orders -->
+<div class="bg-white rounded-xl shadow-md p-6 mb-6">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-bold text-dark"><i class="fas fa-clock text-primary mr-2"></i>Recent Orders</h2>
+    <a href="/admin/orders" class="text-primary hover:underline text-sm">View All <i class="fas fa-arrow-right ml-1"></i></a>
+  </div>
+
+  <% if (typeof recentOrders !== 'undefined' && recentOrders.length > 0) { %>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 text-gray-500 text-left">
+            <th class="pb-3 font-medium">Order #</th>
+            <th class="pb-3 font-medium">Customer</th>
+            <th class="pb-3 font-medium">Amount</th>
+            <th class="pb-3 font-medium">Status</th>
+            <th class="pb-3 font-medium">Date</th>
+            <th class="pb-3 font-medium">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% recentOrders.forEach(order => { %>
+            <%
+              let osc = 'gray';
+              if (order.status === 'pending') osc = 'yellow';
+              else if (order.status === 'processing') osc = 'blue';
+              else if (order.status === 'ready') osc = 'purple';
+              else if (order.status === 'shipped') osc = 'indigo';
+              else if (order.status === 'delivered') osc = 'green';
+              else if (order.status === 'cancelled') osc = 'red';
+            %>
+            <tr class="border-b border-gray-100 hover:bg-gray-50">
+              <td class="py-3 font-semibold">#<%= order.orderNumber %></td>
+              <td class="py-3"><%= order.userId && order.userId.firstName ? order.userId.firstName + ' ' + order.userId.lastName : 'N/A' %></td>
+              <td class="py-3 font-semibold text-primary">&#8369;<%= order.totalAmount.toFixed(2) %></td>
+              <td class="py-3">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold bg-<%= osc %>-100 text-<%= osc %>-700 capitalize"><%= order.status %></span>
+              </td>
+              <td class="py-3 text-gray-500"><%= new Date(order.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) %></td>
+              <td class="py-3">
+                <a href="/admin/orders/<%= order._id %>" class="text-primary hover:underline"><i class="fas fa-eye mr-1"></i>View</a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } else { %>
+    <p class="text-gray-400 text-center py-6">No orders yet.</p>
+  <% } %>
+</div>
+
+<!-- Quick Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <!-- Products Summary -->
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-bold text-dark"><i class="fas fa-boxes-stacked text-primary mr-2"></i>Products</h2>
+      <a href="/admin/products" class="text-primary hover:underline text-sm">Manage <i class="fas fa-arrow-right ml-1"></i></a>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="bg-green-50 rounded-lg p-4 text-center">
+        <p class="text-2xl font-bold text-green-600"><%= typeof stats !== 'undefined' ? stats.availableProducts : 0 %></p>
+        <p class="text-xs text-green-500 mt-1">Available</p>
+      </div>
+      <div class="bg-red-50 rounded-lg p-4 text-center">
+        <p class="text-2xl font-bold text-red-600"><%= typeof stats !== 'undefined' ? stats.outOfStockProducts : 0 %></p>
+        <p class="text-xs text-red-500 mt-1">Out of Stock</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Status Breakdown -->
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <h2 class="text-lg font-bold text-dark mb-4"><i class="fas fa-chart-pie text-primary mr-2"></i>Order Breakdown</h2>
+    <div class="space-y-3">
+      <% const breakdown = typeof stats !== 'undefined' ? stats.orderBreakdown || {} : {}; %>
+      <% ['pending', 'processing', 'ready', 'shipped', 'delivered', 'cancelled'].forEach(s => { %>
+        <%
+          let bColor = 'gray';
+          if (s === 'pending') bColor = 'yellow';
+          else if (s === 'processing') bColor = 'blue';
+          else if (s === 'ready') bColor = 'purple';
+          else if (s === 'shipped') bColor = 'indigo';
+          else if (s === 'delivered') bColor = 'green';
+          else if (s === 'cancelled') bColor = 'red';
+          const count = breakdown[s] || 0;
+        %>
+        <div class="flex items-center justify-between">
+          <span class="text-sm capitalize text-gray-600"><%= s %></span>
+          <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-<%= bColor %>-100 text-<%= bColor %>-700"><%= count %></span>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</div>
