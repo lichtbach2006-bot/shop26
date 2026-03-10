@@ -15,7 +15,7 @@
           </div>
 
           <% cartItems.forEach((item, index) => { %>
-<div class="cart-item bg-white rounded-xl shadow-md p-4 flex items-center gap-4 border border-transparent hover:border-blue-200 transition"></div>              <div class="flex-shrink-0">
+<div class="cart-item bg-white rounded-xl shadow-md p-4 flex items-center gap-4 border border-transparent hover:border-blue-200 transition">              <div class="flex-shrink-0">
                 <input type="checkbox" name="selectedItems" value="<%= item._id %>" 
                   data-price="<%= item.totalPrice %>"
                   class="cart-item-checkbox w-5 h-5 rounded text-primary focus:ring-primary cursor-pointer" checked>
@@ -32,11 +32,9 @@
                     <h3 class="font-bold text-lg text-dark"><%= item.productId.name %></h3>
                     <span class="text-xs bg-purple-100 text-primary px-2 py-0.5 rounded-full capitalize"><%= item.productId.category %></span>
                   </div>
-                  <button type="button" 
-          onclick="deleteCartItem(this, '<%= item._id %>')" 
-          class="text-red-400 hover:text-red-600 transition p-2">
-    <i class="fas fa-trash"></i>
-  </button>
+                  <button type="button" onclick="deleteCartItem(this, '<%= item._id %>')" class="text-red-400 hover:text-red-600 transition p-2">
+  <i class="fas fa-trash"></i>
+</button>
                 </div>
 
                 <div class="mt-2 text-sm text-gray-500 space-y-1">
@@ -103,108 +101,81 @@
   <% } %>
 
   <script>
-    // 1. Fixed Delete Function
-    async function deleteCartItem(btnElement, itemId) {
-      if (!confirm('Are you sure you want to remove this item?')) return;
+document.addEventListener("DOMContentLoaded", () => {
 
-      try {
-        // Mas maganda ang fetch para hindi magulo ang main form submission
-        const response = await fetch(`/customer/cart/${itemId}/remove`, {
-          method: 'POST', // Siguraduhin na POST ito sa backend mo
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
+  // GLOBAL: update summary function
+  window.updateSummary = function () {
+    const checkboxes = document.querySelectorAll(".cart-item-checkbox");
+    let total = 0;
+    let count = 0;
 
-        if (response.ok) {
-          // I-remove ang element sa UI para instant ang feedback
-          btnElement.closest('.cart-item').remove();
-          // Tawagin ang calculateSummary para ma-update ang total
-          window.updateSummary();
-          
-          // Opsyonal: I-reload ang page kung gusto mong mag-refresh ang data sa server
-          window.location.reload();
-        } else {
-          alert('Failed to delete item.');
-        }
-      } catch (err) {
-        console.error('Error:', err);
-        alert('An error occurred.');
+    checkboxes.forEach(cb => {
+      if (cb.checked) {
+        total += parseFloat(cb.dataset.price) || 0;
+        count++;
       }
+    });
+
+    document.getElementById("subtotal").innerText = total.toLocaleString(undefined, { minimumFractionDigits: 2 });
+    document.getElementById("grand-total").innerText = total.toLocaleString(undefined, { minimumFractionDigits: 2 });
+    document.getElementById("selected-count").innerText = count;
+
+    const checkoutBtn = document.getElementById("checkout-btn");
+    if (checkoutBtn) {
+      checkoutBtn.disabled = count === 0;
+      checkoutBtn.style.opacity = count === 0 ? "0.5" : "1";
     }
+  };
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const checkboxes = document.querySelectorAll('.cart-item-checkbox');
-      const selectAll = document.getElementById('select-all');
-      const subtotalEl = document.getElementById('subtotal');
-      const totalEl = document.getElementById('grand-total');
-      const countEl = document.getElementById('selected-count');
-      const checkoutBtn = document.getElementById('checkout-btn');
-
-      // Ginawang global para matawag ng delete function
-      window.updateSummary = function calculateSummary() {
-        let total = 0;
-        let count = 0;
-
-        // Update: Kunin ulit ang checkboxes dahil baka may na-delete na
-        const currentCheckboxes = document.querySelectorAll('.cart-item-checkbox');
-        
-        currentCheckboxes.forEach(cb => {
-          if (cb.checked) {
-            total += parseFloat(cb.dataset.price) || 0;
-            count++;
-          }
-        });
-
-        if(subtotalEl) subtotalEl.innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
-        if(totalEl) totalEl.innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
-        if(countEl) countEl.innerText = count;
-        
-        if(checkoutBtn) {
-            checkoutBtn.disabled = (count === 0);
-            // Visual cue para sa disabled button
-            checkoutBtn.style.opacity = (count === 0) ? "0.5" : "1";
-        }
-      }
-
-      if (selectAll) {
-        selectAll.addEventListener('change', (e) => {
-          checkboxes.forEach(cb => cb.checked = e.target.checked);
-          window.updateSummary();
-        });
-      }
-
-      checkboxes.forEach(cb => {
-        cb.addEventListener('change', () => {
-          if (selectAll) {
-            selectAll.checked = Array.from(checkboxes).every(c => c.checked);
-          }
-          window.updateSummary();
-        });
-      });
-
+  // SELECT ALL checkbox
+  const selectAll = document.getElementById("select-all");
+  if (selectAll) {
+    selectAll.addEventListener("change", e => {
+      const checkboxes = document.querySelectorAll(".cart-item-checkbox");
+      checkboxes.forEach(cb => cb.checked = e.target.checked);
       window.updateSummary();
     });
-
-    async function deleteCartItem(btn, itemId) {
-  if (!confirm("Remove this item from cart?")) return;
-
-  try {
-    const res = await fetch(`/customer/cart/${itemId}/remove`, {
-      method: "POST"
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      btn.closest(".cart-item").remove();
-      updateSummary();
-    } else {
-      alert("Failed to remove item.");
-    }
-  } catch (err) {
-    console.error(err);
-    alert("Error removing item.");
   }
-}
-  </script>
+
+  // INDIVIDUAL checkboxes
+  const checkboxes = document.querySelectorAll(".cart-item-checkbox");
+  checkboxes.forEach(cb => {
+    cb.addEventListener("change", () => {
+      if (selectAll) {
+        selectAll.checked = Array.from(checkboxes).every(c => c.checked);
+      }
+      window.updateSummary();
+    });
+  });
+
+  // DELETE CART ITEM
+  window.deleteCartItem = async function (btnElement, cartId) {
+    if (!confirm("Are you sure you want to remove this item?")) return;
+
+    try {
+      const res = await fetch(`/customer/cart/${cartId}/remove`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}) // send empty JSON, required for POST
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        btnElement.closest(".cart-item").remove();
+        window.updateSummary(); // recalc totals dynamically
+      } else {
+        alert(data.message || "Failed to remove item.");
+      }
+
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Error deleting item.");
+    }
+  };
+
+  // INITIAL summary
+  window.updateSummary();
+
+});
+</script>

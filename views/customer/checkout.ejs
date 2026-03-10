@@ -10,8 +10,7 @@
   <i class="fas fa-credit-card text-primary mr-2"></i>Checkout
 </h1>
 
-<form id="orderForm" action="/customer/place-order" method="POST" enctype="multipart/form-data">
-  
+<form id="orderForm" action="/customer/checkout" method="POST" enctype="multipart/form-data">
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
     <div class="lg:col-span-2 space-y-6">
       
@@ -69,11 +68,11 @@
         <div class="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
           <% let total = 0; %>
           <% if (typeof cartItems !== 'undefined' && cartItems.length > 0) { %>
-            <% cartItems.forEach(item => { total += item.totalPrice; %>
-              <div class="flex gap-3 pb-3 border-b border-gray-100">
-                <input type="hidden" name="itemIds[]" value="<%= item._id %>">
-                
-                <img src="<%= item.productId.imageUrl %>" class="w-14 h-14 rounded-lg object-cover flex-shrink-0 border" />
+           <% cartItems.forEach(item => { total += item.totalPrice; %>
+  <div class="flex gap-3 pb-3 border-b border-gray-100">
+    <input type="hidden" name="selectedItems" value="<%= item._id %>">
+    
+    <img src="<%= item.productId.imageUrl %>" class="w-14 h-14 rounded-lg object-cover flex-shrink-0 border" />
                 <div class="flex-1 min-w-0">
                   <p class="font-medium text-sm text-dark truncate"><%= item.productId.name %></p>
                   <p class="text-xs text-gray-400">Qty: <%= item.quantity %></p>

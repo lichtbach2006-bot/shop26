@@ -563,3 +563,26 @@ router.post("/orders/:orderId/cancel", async (req, res) => {
 
 
 module.exports = router;
+
+// GET - My Orders List (ADD THIS)
+router.get("/orders", async (req, res) => {
+  try {
+    const { status } = req.query;
+    const filter = { userId: req.session.user._id, isArchived: false };
+    
+    if (status) filter.status = status;
+
+    const orders = await Order.find(filter).sort({ createdAt: -1 });
+
+    res.render("customer/orders", {
+      title: "My Orders",
+      active: "orders",
+      orders,
+      statusFilter: status || "",
+    });
+  } catch (err) {
+    console.error("❌ Orders list error:", err.message);
+    req.session.error = "Failed to load orders.";
+    res.redirect("/customer/shop");
+  }
+});
