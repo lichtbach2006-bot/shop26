@@ -146,29 +146,32 @@ router.post("/cart/:cartId/update", async (req, res) => {
 });
 
 // POST - Remove from cart
+// Route para sa pag-remove ng item sa cart (POST method para sa fetch)
 router.post("/cart/:cartId/remove", async (req, res) => {
-  try {
-    const cart = await Cart.findOne({
-      _id: req.params.cartId,
-      userId: req.session.user._id,
-      status: "active",
-      isArchived: false
-    });
+    try {
+        const { cartId } = req.params;
+        const userId = req.session.user._id;
 
-    if (!cart) {
-      return res.status(404).json({ success: false, message: "Cart item not found" });
+        // Siguraduhin na ang buburahin ay sa user na naka-login
+        const deletedItem = await Cart.findOneAndDelete({
+            _id: cartId,
+            userId: userId
+        });
+
+        if (!deletedItem) {
+            req.session.error = "Item not found in your cart.";
+        } else {
+            req.session.success = "Item removed successfully.";
+        }
+
+        // REDIRECT pabalik sa cart para mag-refresh ang UI
+        res.redirect("/customer/cart");
+
+    } catch (error) {
+        console.error("Cart Delete Error:", error);
+        req.session.error = "Server error while removing item.";
+        res.redirect("/customer/cart");
     }
-
-    cart.isArchived = true;
-    cart.status = "removed";
-    await cart.save();
-
-    return res.json({ success: true });
-
-  } catch (err) {
-    console.error("❌ Cart remove error:", err.message);
-    return res.status(500).json({ success: false });
-  }
 });
 
 
@@ -419,25 +422,38 @@ router.get("/profile", async (req, res) => {
 });
 
 // POST - Update profile
+// POST - Update Admin Profile
+// POST - Update Customer Profile
 router.post("/profile/update", async (req, res) => {
-  try {
-    const { firstName, lastName, phoneNumber, address } = req.body;
+    try {
+        const { firstName, lastName, phoneNumber, address } = req.body;
+        const userId = req.session.user._id; // Gamitin ang userId, hindi adminId
 
-    const updated = await User.findByIdAndUpdate(
-      req.session.user._id,
-      { firstName, lastName, phoneNumber, address },
-      { new: true }
-    ).select("-password");
+        // 1. Server-side Validation (Letters only for names)
+        const nameRegex = /^[A-Za-z\s]+$/;
+        if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
+            req.session.error = "Names should only contain letters.";
+            return res.redirect("/customer/profile");
+        }
 
-    // Update session
-    req.session.user = updated.toObject();
-    req.session.success = "Profile updated successfully!";
-    res.redirect("/customer/profile");
-  } catch (err) {
-    console.error("❌ Profile update error:", err.message);
-    req.session.error = "Failed to update profile.";
-    res.redirect("/customer/profile");
-  }
+        // 2. Update Database (User model)
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { firstName, lastName, phoneNumber, address },
+            { new: true }
+        ).select("-password");
+
+        // 3. Update Session para mag-reflect agad ang bagong data sa UI
+        req.session.user = updatedUser.toObject();
+        
+        req.session.success = "Profile updated successfully!";
+        res.redirect("/customer/profile"); // Dito dapat sa customer redirect
+
+    } catch (err) {
+        console.error("❌ Profile Update Error:", err.message);
+        req.session.error = "Failed to update profile.";
+        res.redirect("/customer/profile");
+    }
 });
 
 // POST - Update profile photo
@@ -562,7 +578,6 @@ router.post("/orders/:orderId/cancel", async (req, res) => {
 });
 
 
-module.exports = router;
 
 // GET - My Orders List (ADD THIS)
 router.get("/orders", async (req, res) => {
@@ -586,3 +601,6 @@ router.get("/orders", async (req, res) => {
     res.redirect("/customer/shop");
   }
 });
+
+// DAPAT NASA DULO ITO LAGI:
+module.exports = router;

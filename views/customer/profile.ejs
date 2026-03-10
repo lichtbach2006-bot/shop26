@@ -3,8 +3,7 @@
 <h1 class="text-3xl font-bold text-dark mb-6"><i class="fas fa-user text-primary mr-2"></i>My Profile</h1>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-  <!-- Profile Card -->
-  <div class="bg-white rounded-xl shadow-md p-6 text-center">
+  <div class="bg-white rounded-xl shadow-md p-6 text-center h-fit">
     <div class="relative inline-block">
       <% if (typeof profile !== 'undefined' && profile.profileImage) { %>
         <img src="<%= profile.profileImage %>" class="w-28 h-28 rounded-full object-cover mx-auto border-4 border-primary/20" />
@@ -17,7 +16,7 @@
     <h2 class="font-bold text-xl text-dark mt-4"><%= typeof profile !== 'undefined' ? profile.firstName + ' ' + profile.lastName : '' %></h2>
     <p class="text-gray-500 text-sm"><%= typeof profile !== 'undefined' ? profile.email : '' %></p>
     <span class="inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-primary capitalize">
-      <%= typeof profile !== 'undefined' ? profile.role : '' %>
+      <%= typeof profile !== 'undefined' ? profile.role : 'Customer' %>
     </span>
 
     <form action="/customer/profile/photo" method="POST" enctype="multipart/form-data" class="mt-4">
@@ -28,69 +27,91 @@
     </form>
   </div>
 
-  <!-- Edit Profile Form -->
   <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
-    <h2 class="text-lg font-bold text-dark mb-4">Edit Profile</h2>
+    <h2 class="text-lg font-bold text-dark mb-4">Edit Information</h2>
+    
     <form action="/customer/profile/update" method="POST" class="space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-          <input type="text" name="firstName" required value="<%= typeof profile !== 'undefined' ? profile.firstName : '' %>"
-            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
+          <input type="text" name="firstName" required 
+                 pattern="^[A-Za-z\s]+$" 
+                 title="Letters only please."
+                 value="<%= typeof profile !== 'undefined' ? profile.firstName : '' %>"
+                 class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-          <input type="text" name="lastName" required value="<%= typeof profile !== 'undefined' ? profile.lastName : '' %>"
-            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
+          <input type="text" name="lastName" required 
+                 pattern="^[A-Za-z\s]+$" 
+                 title="Letters only please."
+                 value="<%= typeof profile !== 'undefined' ? profile.lastName : '' %>"
+                 class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
         </div>
       </div>
 
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
         <input type="email" value="<%= typeof profile !== 'undefined' ? profile.email : '' %>" disabled
-          class="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed" />
+               class="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed" />
         <p class="text-xs text-gray-400 mt-1">Email cannot be changed.</p>
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-        <input type="text" name="phoneNumber" required value="<%= typeof profile !== 'undefined' ? profile.phoneNumber : '' %>"
-          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
-      </div>
-
+    <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+    <div class="relative">
+        <input type="tel" 
+               name="phoneNumber" 
+               required 
+               maxlength="11"
+               /* Pattern: Dapat magsimula sa 09 tapos 9 na digit pa */
+               pattern="09[0-9]{9}" 
+               title="Please enter a valid Philippine mobile number starting with 09 (e.g., 09123456789)"
+               value="<%= typeof profile !== 'undefined' ? profile.phoneNumber : '' %>"
+               /* Force numbers only and check if it starts with 09 */
+               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)"
+               placeholder="09123456789"
+               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition peer" />
+        
+        <p class="mt-1 hidden peer-invalid:block text-xs text-red-500">
+            Must be 11 digits starting with 09
+        </p>
+    </div>
+</div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
         <textarea name="address" required rows="3"
-          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition resize-none"><%= typeof profile !== 'undefined' ? profile.address : '' %></textarea>
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition resize-none"><%= typeof profile !== 'undefined' ? profile.address : '' %></textarea>
       </div>
 
-      <button type="submit" class="bg-primary hover:bg-purple-700 text-white font-semibold px-6 py-2.5 rounded-lg transition">
-        <i class="fas fa-save mr-2"></i>Save Changes
-      </button>
+      <div class="pt-2">
+        <button type="submit" class="bg-primary hover:bg-purple-700 text-white font-semibold px-6 py-2.5 rounded-lg transition shadow-sm">
+          <i class="fas fa-save mr-2"></i>Save Changes
+        </button>
+      </div>
     </form>
 
-    <!-- Change Password -->
-    <hr class="my-6">
+    <hr class="my-8">
     <h2 class="text-lg font-bold text-dark mb-4">Change Password</h2>
     <form action="/customer/profile/password" method="POST" class="space-y-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
         <input type="password" name="currentPassword" required
-          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
+               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-          <input type="password" name="newPassword" required
-            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
+          <input type="password" name="newPassword" required minlength="6"
+                 class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-          <input type="password" name="confirmNewPassword" required
-            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
+          <input type="password" name="confirmNewPassword" required minlength="6"
+                 class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
         </div>
       </div>
-      <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white font-semibold px-6 py-2.5 rounded-lg transition">
+      <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white font-semibold px-6 py-2.5 rounded-lg transition shadow-sm">
         <i class="fas fa-key mr-2"></i>Update Password
       </button>
     </form>

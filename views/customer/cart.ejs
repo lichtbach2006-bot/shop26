@@ -1,11 +1,11 @@
-  <% layout('layouts/main') %>
+<% layout('layouts/main') %>
 
-  <h1 class="text-3xl font-bold text-dark mb-6">
-    <i class="fas fa-shopping-cart text-primary mr-2"></i>My Cart
-  </h1>
+<h1 class="text-3xl font-bold text-dark mb-6">
+  <i class="fas fa-shopping-cart text-primary mr-2"></i>My Cart
+</h1>
 
-  <% if (typeof cartItems !== 'undefined' && cartItems.length > 0) { %>
-   <form action="/customer/checkout" method="GET">
+<% if (typeof cartItems !== 'undefined' && cartItems.length > 0) { %>
+  <form action="/customer/checkout" method="GET" id="checkout-form">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         <div class="lg:col-span-2 space-y-4">
@@ -15,7 +15,8 @@
           </div>
 
           <% cartItems.forEach((item, index) => { %>
-<div class="cart-item bg-white rounded-xl shadow-md p-4 flex items-center gap-4 border border-transparent hover:border-blue-200 transition">              <div class="flex-shrink-0">
+            <div class="cart-item bg-white rounded-xl shadow-md p-4 flex items-center gap-4 border border-transparent hover:border-blue-200 transition">
+              <div class="flex-shrink-0">
                 <input type="checkbox" name="selectedItems" value="<%= item._id %>" 
                   data-price="<%= item.totalPrice %>"
                   class="cart-item-checkbox w-5 h-5 rounded text-primary focus:ring-primary cursor-pointer" checked>
@@ -30,11 +31,18 @@
                 <div class="flex items-start justify-between">
                   <div>
                     <h3 class="font-bold text-lg text-dark"><%= item.productId.name %></h3>
-                    <span class="text-xs bg-purple-100 text-primary px-2 py-0.5 rounded-full capitalize"><%= item.productId.category %></span>
+                    <span class="text-xs bg-purple-100 text-primary px-2 py-0.5 rounded-full capitalize">
+                      <%= item.productId.category %>
+                    </span>
                   </div>
-                  <button type="button" onclick="deleteCartItem(this, '<%= item._id %>')" class="text-red-400 hover:text-red-600 transition p-2">
-  <i class="fas fa-trash"></i>
-</button>
+
+                  <button type="submit" 
+                          formaction="/customer/cart/<%= item._id %>/remove" 
+                          formmethod="POST"
+                          onclick="return confirm('Sigurado ka bang gusto mong alisin ito?')" 
+                          class="p-2 hover:bg-red-50 rounded-full transition group">
+                    <i class="fas fa-trash text-red-500 group-hover:text-red-700"></i>
+                  </button>
                 </div>
 
                 <div class="mt-2 text-sm text-gray-500 space-y-1">
@@ -57,7 +65,6 @@
         <div class="lg:col-start-3">
           <div class="bg-white rounded-xl shadow-md p-6 sticky top-24 border border-blue-100">
             <h2 class="text-xl font-bold text-dark mb-4"><i class="fas fa-receipt mr-2"></i>Order Summary</h2>
-
             <div class="space-y-3 text-sm">
               <div class="flex justify-between text-gray-500">
                 <span>Items Selected</span>
@@ -88,94 +95,57 @@
           </div>
         </div>
       </div>
-    </form>
-  <% } else { %>
+  </form>
+<% } else { %>
     <div class="text-center py-20 bg-white rounded-2xl shadow-sm border border-dashed border-gray-200">
       <i class="fas fa-shopping-cart text-gray-200 text-7xl mb-4"></i>
       <h2 class="text-xl font-semibold text-gray-500">Your cart is empty</h2>
-      <p class="text-gray-400 mt-2">Looks like you haven't added anything yet.</p>
-      <a href="/customer/shop" class="inline-block mt-6 bg-primary hover:bg-purple-700 text-white font-semibold px-8 py-3 rounded-lg transition">
-        Start Shopping
-      </a>
+      <a href="/customer/shop" class="inline-block mt-6 bg-primary hover:bg-purple-700 text-white font-semibold px-8 py-3 rounded-lg transition">Start Shopping</a>
     </div>
-  <% } %>
+<% } %>
 
-  <script>
-document.addEventListener("DOMContentLoaded", () => {
-
-  // GLOBAL: update summary function
-  window.updateSummary = function () {
-    const checkboxes = document.querySelectorAll(".cart-item-checkbox");
-    let total = 0;
-    let count = 0;
-
-    checkboxes.forEach(cb => {
-      if (cb.checked) {
-        total += parseFloat(cb.dataset.price) || 0;
-        count++;
-      }
-    });
-
-    document.getElementById("subtotal").innerText = total.toLocaleString(undefined, { minimumFractionDigits: 2 });
-    document.getElementById("grand-total").innerText = total.toLocaleString(undefined, { minimumFractionDigits: 2 });
-    document.getElementById("selected-count").innerText = count;
-
-    const checkoutBtn = document.getElementById("checkout-btn");
-    if (checkoutBtn) {
-      checkoutBtn.disabled = count === 0;
-      checkoutBtn.style.opacity = count === 0 ? "0.5" : "1";
-    }
-  };
-
-  // SELECT ALL checkbox
-  const selectAll = document.getElementById("select-all");
-  if (selectAll) {
-    selectAll.addEventListener("change", e => {
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const updateSummary = () => {
       const checkboxes = document.querySelectorAll(".cart-item-checkbox");
-      checkboxes.forEach(cb => cb.checked = e.target.checked);
-      window.updateSummary();
-    });
-  }
+      let total = 0;
+      let count = 0;
 
-  // INDIVIDUAL checkboxes
-  const checkboxes = document.querySelectorAll(".cart-item-checkbox");
-  checkboxes.forEach(cb => {
-    cb.addEventListener("change", () => {
-      if (selectAll) {
-        selectAll.checked = Array.from(checkboxes).every(c => c.checked);
-      }
-      window.updateSummary();
-    });
-  });
-
-  // DELETE CART ITEM
-  window.deleteCartItem = async function (btnElement, cartId) {
-    if (!confirm("Are you sure you want to remove this item?")) return;
-
-    try {
-      const res = await fetch(`/customer/cart/${cartId}/remove`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}) // send empty JSON, required for POST
+      checkboxes.forEach(cb => {
+        if (cb.checked) {
+          total += parseFloat(cb.dataset.price) || 0;
+          count++;
+        }
       });
 
-      const data = await res.json();
+      document.getElementById("subtotal").innerText = total.toLocaleString(undefined, { minimumFractionDigits: 2 });
+      document.getElementById("grand-total").innerText = total.toLocaleString(undefined, { minimumFractionDigits: 2 });
+      document.getElementById("selected-count").innerText = count;
 
-      if (data.success) {
-        btnElement.closest(".cart-item").remove();
-        window.updateSummary(); // recalc totals dynamically
-      } else {
-        alert(data.message || "Failed to remove item.");
+      const checkoutBtn = document.getElementById("checkout-btn");
+      if (checkoutBtn) {
+        checkoutBtn.disabled = count === 0;
       }
+    };
 
-    } catch (err) {
-      console.error("Delete error:", err);
-      alert("Error deleting item.");
+    const selectAll = document.getElementById("select-all");
+    if (selectAll) {
+      selectAll.addEventListener("change", e => {
+        document.querySelectorAll(".cart-item-checkbox").forEach(cb => cb.checked = e.target.checked);
+        updateSummary();
+      });
     }
-  };
 
-  // INITIAL summary
-  window.updateSummary();
+    document.querySelectorAll(".cart-item-checkbox").forEach(cb => {
+      cb.addEventListener("change", () => {
+        if (selectAll) {
+          const allChecked = Array.from(document.querySelectorAll(".cart-item-checkbox")).every(c => c.checked);
+          selectAll.checked = allChecked;
+        }
+        updateSummary();
+      });
+    });
 
-});
+    updateSummary();
+  });
 </script>
