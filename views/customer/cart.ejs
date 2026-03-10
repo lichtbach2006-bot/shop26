@@ -1,171 +1,210 @@
-<% layout('layouts/main') %>
+  <% layout('layouts/main') %>
 
-<h1 class="text-3xl font-bold text-dark mb-6">
-  <i class="fas fa-shopping-cart text-primary mr-2"></i>My Cart
-</h1>
+  <h1 class="text-3xl font-bold text-dark mb-6">
+    <i class="fas fa-shopping-cart text-primary mr-2"></i>My Cart
+  </h1>
 
-<% if (typeof cartItems !== 'undefined' && cartItems.length > 0) { %>
-  <form id="cart-form" action="/customer/checkout" method="GET">
+  <% if (typeof cartItems !== 'undefined' && cartItems.length > 0) { %>
+   <form action="/customer/checkout" method="GET">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      
-      <div class="lg:col-span-2 space-y-4">
-        <div class="bg-gray-50 p-3 rounded-lg flex items-center gap-3 border border-gray-200">
-          <input type="checkbox" id="select-all" class="w-5 h-5 rounded text-primary focus:ring-primary cursor-pointer" checked>
-          <label for="select-all" class="text-sm font-medium text-gray-700 cursor-pointer">Select All Items</label>
-        </div>
-
-        <% cartItems.forEach((item, index) => { %>
-          <div class="bg-white rounded-xl shadow-md p-4 flex items-center gap-4 border border-transparent hover:border-blue-200 transition">
-            
-            <div class="flex-shrink-0">
-              <input type="checkbox" name="selectedItems" value="<%= item._id %>" 
-                data-price="<%= item.totalPrice %>"
-                class="cart-item-checkbox w-5 h-5 rounded text-primary focus:ring-primary cursor-pointer" checked>
-            </div>
-
-            <div class="flex-shrink-0">
-              <img src="<%= item.productId.imageUrl %>" alt="<%= item.productId.name %>"
-                class="w-20 h-20 sm:w-28 sm:h-28 object-cover rounded-lg border" />
-            </div>
-
-            <div class="flex-1">
-              <div class="flex items-start justify-between">
-                <div>
-                  <h3 class="font-bold text-lg text-dark"><%= item.productId.name %></h3>
-                  <span class="text-xs bg-purple-100 text-primary px-2 py-0.5 rounded-full capitalize"><%= item.productId.category %></span>
-                </div>
-                <button type="button" 
-        onclick="deleteCartItem(this, '<%= item._id %>')" 
-        class="text-red-400 hover:text-red-600 transition p-2">
-  <i class="fas fa-trash"></i>
-</button>
-              </div>
-
-              <div class="mt-2 text-sm text-gray-500 space-y-1">
-                <% if (item.selectedSize) { %><p><i class="fas fa-ruler mr-1 text-xs"></i>Size: <span class="font-medium text-gray-700"><%= item.selectedSize %></span></p><% } %>
-                <% if (item.selectedColor) { %><p><i class="fas fa-palette mr-1 text-xs"></i>Color: <span class="font-medium text-gray-700 capitalize"><%= item.selectedColor %></span></p><% } %>
-              </div>
-
-              <div class="flex items-center justify-between mt-3">
-                <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-400">Quantity:</span>
-                    <span class="w-8 text-center font-bold text-dark"><%= item.quantity %></span>
-                </div>
-                <span class="font-bold text-primary text-lg">&#8369;<%= item.totalPrice.toFixed(2) %></span>
-              </div>
-            </div>
-          </div>
-        <% }) %>
-      </div>
-
-      <div class="lg:col-start-3">
-        <div class="bg-white rounded-xl shadow-md p-6 sticky top-24 border border-blue-100">
-          <h2 class="text-xl font-bold text-dark mb-4"><i class="fas fa-receipt mr-2"></i>Order Summary</h2>
-
-          <div class="space-y-3 text-sm">
-            <div class="flex justify-between text-gray-500">
-              <span>Items Selected</span>
-              <span id="selected-count" class="font-bold text-dark">0</span>
-            </div>
-            <div class="flex justify-between text-gray-500">
-              <span>Subtotal</span>
-              <span class="text-dark font-medium">&#8369;<span id="subtotal">0.00</span></span>
-            </div>
-            <div class="flex justify-between text-gray-500">
-              <span>Shipping</span>
-              <span class="text-green-500 font-medium italic">Calculated at checkout</span>
-            </div>
-            <hr class="border-gray-100">
-            <div class="flex justify-between text-lg font-bold text-dark">
-              <span>Total</span>
-              <span class="text-primary">&#8369;<span id="grand-total">0.00</span></span>
-            </div>
+        
+        <div class="lg:col-span-2 space-y-4">
+          <div class="bg-gray-50 p-3 rounded-lg flex items-center gap-3 border border-gray-200">
+            <input type="checkbox" id="select-all" class="w-5 h-5 rounded text-primary focus:ring-primary cursor-pointer" checked>
+            <label for="select-all" class="text-sm font-medium text-gray-700 cursor-pointer">Select All Items</label>
           </div>
 
-          <button type="submit" id="checkout-btn" class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition text-center text-lg mt-6 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-100">
-            <i class="fas fa-credit-card mr-2"></i>Checkout Selected
-          </button>
+          <% cartItems.forEach((item, index) => { %>
+<div class="cart-item bg-white rounded-xl shadow-md p-4 flex items-center gap-4 border border-transparent hover:border-blue-200 transition"></div>              <div class="flex-shrink-0">
+                <input type="checkbox" name="selectedItems" value="<%= item._id %>" 
+                  data-price="<%= item.totalPrice %>"
+                  class="cart-item-checkbox w-5 h-5 rounded text-primary focus:ring-primary cursor-pointer" checked>
+              </div>
 
-          <a href="/customer/shop" class="block text-center text-primary hover:underline text-sm mt-4">
-            <i class="fas fa-arrow-left mr-1"></i>Continue Shopping
-          </a>
+              <div class="flex-shrink-0">
+                <img src="<%= item.productId.imageUrl %>" alt="<%= item.productId.name %>"
+                  class="w-20 h-20 sm:w-28 sm:h-28 object-cover rounded-lg border" />
+              </div>
+
+              <div class="flex-1">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <h3 class="font-bold text-lg text-dark"><%= item.productId.name %></h3>
+                    <span class="text-xs bg-purple-100 text-primary px-2 py-0.5 rounded-full capitalize"><%= item.productId.category %></span>
+                  </div>
+                  <button type="button" 
+          onclick="deleteCartItem(this, '<%= item._id %>')" 
+          class="text-red-400 hover:text-red-600 transition p-2">
+    <i class="fas fa-trash"></i>
+  </button>
+                </div>
+
+                <div class="mt-2 text-sm text-gray-500 space-y-1">
+                  <% if (item.selectedSize) { %><p><i class="fas fa-ruler mr-1 text-xs"></i>Size: <span class="font-medium text-gray-700"><%= item.selectedSize %></span></p><% } %>
+                  <% if (item.selectedColor) { %><p><i class="fas fa-palette mr-1 text-xs"></i>Color: <span class="font-medium text-gray-700 capitalize"><%= item.selectedColor %></span></p><% } %>
+                </div>
+
+                <div class="flex items-center justify-between mt-3">
+                  <div class="flex items-center gap-2">
+                      <span class="text-xs text-gray-400">Quantity:</span>
+                      <span class="w-8 text-center font-bold text-dark"><%= item.quantity %></span>
+                  </div>
+                  <span class="font-bold text-primary text-lg">&#8369;<%= item.totalPrice.toFixed(2) %></span>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+
+        <div class="lg:col-start-3">
+          <div class="bg-white rounded-xl shadow-md p-6 sticky top-24 border border-blue-100">
+            <h2 class="text-xl font-bold text-dark mb-4"><i class="fas fa-receipt mr-2"></i>Order Summary</h2>
+
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between text-gray-500">
+                <span>Items Selected</span>
+                <span id="selected-count" class="font-bold text-dark">0</span>
+              </div>
+              <div class="flex justify-between text-gray-500">
+                <span>Subtotal</span>
+                <span class="text-dark font-medium">&#8369;<span id="subtotal">0.00</span></span>
+              </div>
+              <div class="flex justify-between text-gray-500">
+                <span>Shipping</span>
+                <span class="text-green-500 font-medium italic">Calculated at checkout</span>
+              </div>
+              <hr class="border-gray-100">
+              <div class="flex justify-between text-lg font-bold text-dark">
+                <span>Total</span>
+                <span class="text-primary">&#8369;<span id="grand-total">0.00</span></span>
+              </div>
+            </div>
+
+            <button type="submit" id="checkout-btn" class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition text-center text-lg mt-6 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-100">
+              <i class="fas fa-credit-card mr-2"></i>Checkout Selected
+            </button>
+
+            <a href="/customer/shop" class="block text-center text-primary hover:underline text-sm mt-4">
+              <i class="fas fa-arrow-left mr-1"></i>Continue Shopping
+            </a>
+          </div>
         </div>
       </div>
+    </form>
+  <% } else { %>
+    <div class="text-center py-20 bg-white rounded-2xl shadow-sm border border-dashed border-gray-200">
+      <i class="fas fa-shopping-cart text-gray-200 text-7xl mb-4"></i>
+      <h2 class="text-xl font-semibold text-gray-500">Your cart is empty</h2>
+      <p class="text-gray-400 mt-2">Looks like you haven't added anything yet.</p>
+      <a href="/customer/shop" class="inline-block mt-6 bg-primary hover:bg-purple-700 text-white font-semibold px-8 py-3 rounded-lg transition">
+        Start Shopping
+      </a>
     </div>
-  </form>
-<% } else { %>
-  <div class="text-center py-20 bg-white rounded-2xl shadow-sm border border-dashed border-gray-200">
-    <i class="fas fa-shopping-cart text-gray-200 text-7xl mb-4"></i>
-    <h2 class="text-xl font-semibold text-gray-500">Your cart is empty</h2>
-    <p class="text-gray-400 mt-2">Looks like you haven't added anything yet.</p>
-    <a href="/customer/shop" class="inline-block mt-6 bg-primary hover:bg-purple-700 text-white font-semibold px-8 py-3 rounded-lg transition">
-      Start Shopping
-    </a>
-  </div>
-<% } %>
+  <% } %>
 
-<script>
-  // 1. Function para sa Delete (Dapat nasa labas ng DOMContentLoaded)
-  window.deleteCartItem = function(btnElement, itemId) {
-    // Pigilan ang pag-submit ng checkout form
-    if (window.event) {
-      window.event.preventDefault();
-      window.event.stopPropagation();
+  <script>
+    // 1. Fixed Delete Function
+    async function deleteCartItem(btnElement, itemId) {
+      if (!confirm('Are you sure you want to remove this item?')) return;
+
+      try {
+        // Mas maganda ang fetch para hindi magulo ang main form submission
+        const response = await fetch(`/customer/cart/${itemId}/remove`, {
+          method: 'POST', // Siguraduhin na POST ito sa backend mo
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          // I-remove ang element sa UI para instant ang feedback
+          btnElement.closest('.cart-item').remove();
+          // Tawagin ang calculateSummary para ma-update ang total
+          window.updateSummary();
+          
+          // Opsyonal: I-reload ang page kung gusto mong mag-refresh ang data sa server
+          window.location.reload();
+        } else {
+          alert('Failed to delete item.');
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        alert('An error occurred.');
+      }
     }
 
-    if (!confirm('Are you sure you want to remove this item?')) return;
+    document.addEventListener('DOMContentLoaded', () => {
+      const checkboxes = document.querySelectorAll('.cart-item-checkbox');
+      const selectAll = document.getElementById('select-all');
+      const subtotalEl = document.getElementById('subtotal');
+      const totalEl = document.getElementById('grand-total');
+      const countEl = document.getElementById('selected-count');
+      const checkoutBtn = document.getElementById('checkout-btn');
 
-    // Gumawa ng form para sa pag-delete
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/customer/cart/' + itemId + '/remove';
-    
-    document.body.appendChild(form);
-    form.submit();
-  };
+      // Ginawang global para matawag ng delete function
+      window.updateSummary = function calculateSummary() {
+        let total = 0;
+        let count = 0;
 
-  // 2. Logic para sa Checkboxes at Summary
-  document.addEventListener('DOMContentLoaded', () => {
-    const checkboxes = document.querySelectorAll('.cart-item-checkbox');
-    const selectAll = document.getElementById('select-all');
-    const subtotalEl = document.getElementById('subtotal');
-    const totalEl = document.getElementById('grand-total');
-    const countEl = document.getElementById('selected-count');
-    const checkoutBtn = document.getElementById('checkout-btn');
+        // Update: Kunin ulit ang checkboxes dahil baka may na-delete na
+        const currentCheckboxes = document.querySelectorAll('.cart-item-checkbox');
+        
+        currentCheckboxes.forEach(cb => {
+          if (cb.checked) {
+            total += parseFloat(cb.dataset.price) || 0;
+            count++;
+          }
+        });
 
-    function calculateSummary() {
-      let total = 0;
-      let count = 0;
+        if(subtotalEl) subtotalEl.innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
+        if(totalEl) totalEl.innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
+        if(countEl) countEl.innerText = count;
+        
+        if(checkoutBtn) {
+            checkoutBtn.disabled = (count === 0);
+            // Visual cue para sa disabled button
+            checkoutBtn.style.opacity = (count === 0) ? "0.5" : "1";
+        }
+      }
+
+      if (selectAll) {
+        selectAll.addEventListener('change', (e) => {
+          checkboxes.forEach(cb => cb.checked = e.target.checked);
+          window.updateSummary();
+        });
+      }
 
       checkboxes.forEach(cb => {
-        if (cb.checked) {
-          total += parseFloat(cb.dataset.price) || 0;
-          count++;
-        }
+        cb.addEventListener('change', () => {
+          if (selectAll) {
+            selectAll.checked = Array.from(checkboxes).every(c => c.checked);
+          }
+          window.updateSummary();
+        });
       });
 
-      if(subtotalEl) subtotalEl.innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
-      if(totalEl) totalEl.innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
-      if(countEl) countEl.innerText = count;
-      if(checkoutBtn) checkoutBtn.disabled = (count === 0);
-    }
-
-    if (selectAll) {
-      selectAll.addEventListener('change', (e) => {
-        checkboxes.forEach(cb => cb.checked = e.target.checked);
-        calculateSummary();
-      });
-    }
-
-    checkboxes.forEach(cb => {
-      cb.addEventListener('change', () => {
-        if (selectAll) {
-          selectAll.checked = Array.from(checkboxes).every(c => c.checked);
-        }
-        calculateSummary();
-      });
+      window.updateSummary();
     });
 
-    calculateSummary();
-  });
-</script>
+    async function deleteCartItem(btn, itemId) {
+  if (!confirm("Remove this item from cart?")) return;
+
+  try {
+    const res = await fetch(`/customer/cart/${itemId}/remove`, {
+      method: "POST"
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      btn.closest(".cart-item").remove();
+      updateSummary();
+    } else {
+      alert("Failed to remove item.");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Error removing item.");
+  }
+}
+  </script>

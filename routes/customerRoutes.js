@@ -148,69 +148,113 @@ router.post("/cart/:cartId/update", async (req, res) => {
 // POST - Remove from cart
 router.post("/cart/:cartId/remove", async (req, res) => {
   try {
-    const cart = await Cart.findById(req.params.cartId);
-    if (cart && cart.userId.toString() === req.session.user._id.toString()) {
-      cart.isArchived = true;
-      cart.status = "checked_out";
-      await cart.save();
+    const cart = await Cart.findOne({
+      _id: req.params.cartId,
+      userId: req.session.user._id,
+      status: "active",
+      isArchived: false
+    });
+
+    if (!cart) {
+      return res.status(404).json({ success: false, message: "Cart item not found" });
     }
-    req.session.success = "Item removed from cart.";
-    res.redirect("/customer/cart");
+
+    cart.isArchived = true;
+    cart.status = "removed";
+    await cart.save();
+
+    return res.json({ success: true });
+
   } catch (err) {
     console.error("❌ Cart remove error:", err.message);
-    req.session.error = "Failed to remove item.";
-    res.redirect("/customer/cart");
+    return res.status(500).json({ success: false });
   }
 });
 
+
+
 // ==================== CHECKOUT ====================
+
+// GET - Checkout page (selected cart items only)
 router.get("/checkout", async (req, res) => {
   try {
-    const cartItems = await Cart.find({
-      userId: req.session.user._id,
-      status: "active",
-      isArchived: false,
-    }).populate("productId");
+    const { selectedItems } = req.query;
 
-    if (cartItems.length === 0) {
-      req.session.warning = "Your cart is empty.";
+    if (!selectedItems) {
+      req.session.warning = "Please select items from your cart first.";
       return res.redirect("/customer/cart");
     }
 
-    res.render("customer/checkout", { title: "Checkout", active: "cart", cartItems });
+    const itemsToProcess = Array.isArray(selectedItems)
+      ? selectedItems
+      : [selectedItems];
+
+    const cartItems = await Cart.find({
+      _id: { $in: itemsToProcess },
+      userId: req.session.user._id,
+      status: "active",
+      isArchived: false
+    }).populate("productId");
+
+    if (cartItems.length === 0) {
+      req.session.warning = "No valid items selected.";
+      return res.redirect("/customer/cart");
+    }
+
+    res.render("customer/checkout", {
+      title: "Checkout",
+      active: "cart",
+      cartItems,
+      selectedItems: itemsToProcess
+    });
+
   } catch (err) {
-    console.error("❌ Checkout error:", err.message);
+    console.error("❌ Checkout GET error:", err.message);
     req.session.error = "Failed to load checkout.";
     res.redirect("/customer/cart");
   }
 });
 
+
 // POST - Place order
+// POST - Place order (FIXED VERSION)
 router.post("/checkout", async (req, res) => {
   try {
-    const { shippingAddress, contactNumber, notes } = req.body;
+    const { shippingAddress, contactNumber, notes, selectedItems } = req.body;
     const userId = req.session.user._id;
 
-    // Get active cart items
+    // 1. Validasyon: Siguraduhing may napiling items
+    if (!selectedItems || (Array.isArray(selectedItems) && selectedItems.length === 0)) {
+      req.session.warning = "Please select at least one item to checkout.";
+      return res.redirect("/customer/cart");
+    }
+
+    // 2. I-convert sa Array kung iisang item lang ang pinili (Express behavior)
+    const itemsToProcess = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
+
+    // 3. Kunin LAMANG ang mga napiling active cart items
     const cartItems = await Cart.find({
+      _id: { $in: itemsToProcess },
       userId,
       status: "active",
       isArchived: false,
     }).populate("productId");
 
     if (cartItems.length === 0) {
-      req.session.warning = "Your cart is empty.";
+      req.session.warning = "No valid items selected or items were already processed.";
       return res.redirect("/customer/cart");
     }
 
-    // Calculate total
+    // 4. Kalkulahin ang total base lang sa selected items
     let totalAmount = 0;
-    cartItems.forEach((item) => (totalAmount += item.totalPrice));
+    cartItems.forEach((item) => {
+      totalAmount += item.totalPrice;
+    });
 
-    // Generate order number
+    // 5. Generate order number
     const orderNumber = `KDY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-    // Create order
+    // 6. Create ang Order record
     const order = await Order.create({
       userId,
       orderNumber,
@@ -220,7 +264,7 @@ router.post("/checkout", async (req, res) => {
       notes: notes || null,
     });
 
-    // Create order items from cart
+    // 7. Loop sa cartItems para sa OrderItems at Stock Management
     for (const item of cartItems) {
       await OrderItem.create({
         orderId: order._id,
@@ -234,18 +278,18 @@ router.post("/checkout", async (req, res) => {
         subtotal: item.totalPrice,
       });
 
-      // Reduce stock
+      // Bawasan ang stock ng produkto
       await Product.findByIdAndUpdate(item.productId._id, {
         $inc: { stock: -item.quantity },
       });
 
-      // Mark cart item as checked out
+      // Markahan ang cart item bilang checked_out at archived
       item.status = "checked_out";
       item.isArchived = true;
       await item.save();
     }
 
-    // Handle supporting file uploads
+    // 8. Handle supporting file uploads (kung meron)
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         await UploadedFile.create({
@@ -259,7 +303,7 @@ router.post("/checkout", async (req, res) => {
       }
     }
 
-    // Create notification
+    // 9. Create Notification para sa user
     await Notification.create({
       userId,
       title: "Order Placed Successfully!",
@@ -267,34 +311,14 @@ router.post("/checkout", async (req, res) => {
       type: "order_update",
     });
 
+    // 10. Success redirect
     req.session.success = `Order #${orderNumber} placed successfully!`;
     res.redirect(`/customer/orders/${order._id}`);
+
   } catch (err) {
     console.error("❌ Checkout error:", err.message);
     req.session.error = "Failed to place order. Please try again.";
     res.redirect("/customer/checkout");
-  }
-});
-
-// ==================== ORDERS ====================
-router.get("/orders", async (req, res) => {
-  try {
-    const { status } = req.query;
-    const filter = { userId: req.session.user._id, isArchived: false };
-    if (status) filter.status = status;
-
-    const orders = await Order.find(filter).sort({ createdAt: -1 });
-
-    res.render("customer/orders", {
-      title: "My Orders",
-      active: "orders",
-      orders,
-      statusFilter: status || "",
-    });
-  } catch (err) {
-    console.error("❌ Orders error:", err.message);
-    req.session.error = "Failed to load orders.";
-    res.redirect("/customer/shop");
   }
 });
 
@@ -379,6 +403,8 @@ router.post("/notifications/read-all", async (req, res) => {
     res.redirect("/customer/notifications");
   }
 });
+
+
 
 // ==================== PROFILE ====================
 router.get("/profile", async (req, res) => {
