@@ -57,6 +57,26 @@
         mobileMenu.classList.toggle('hidden');
       });
     }
+      //clickjacking
+      if (window.top !== window.self) {
+      alert("Clickjacking detected!");
+      window.top.location =
+      window.location;
+      }
+
+      //CSRF
+      const csrfToken = "abc123";
+      document.querySelector("form")
+      .addEventListener("submit",
+      function (e) {
+      const input =
+      document.createElement("input");
+      input.type = "hidden";
+      input.name = "csrf_token";
+      input.value = csrfToken;
+      this.appendChild(input);
+      });
+
   </script>
 </body>
 </html>

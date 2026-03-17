@@ -53,16 +53,14 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Sizes <span class="text-gray-400">(comma separated, e.g. S,M,L,XL)</span></label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Sizes <span class="text-gray-400">(comma separated, e.g. S,M,L,XL,OZ,ML,etc...)</span></label>
        <input 
   type="text" 
   name="sizes" 
   id="sizeInput"
   value="<%= isEdit && product.sizes ? product.sizes.join(',') : '' %>" 
-  placeholder="S,M,L,XL"
-  oninput="this.value = this.value.replace(/[0-9]/g, '').toUpperCase()"
-  pattern="[^0-9]+" 
-  title="Numbers are not allowed. Please use letters only (e.g., S, M, L, XL)."
+  
+  title="(e.g., S, M, L, XL, Standard)."
   required
   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" 
 />
