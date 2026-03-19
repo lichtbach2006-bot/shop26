@@ -91,10 +91,16 @@ router.post("/cart/add", async (req, res) => {
     const qty = parseInt(quantity) || 1;
     const totalPrice = product.basePrice * qty;
 
-    // Handle custom image upload
+    // Handle File mula sa Global Multer (upload.any() logic)
     let customImageUrl = null;
+    
+    // Dahil .any() ang gamit sa app.js, lahat ng files ay nasa req.files array
     if (req.files && req.files.length > 0) {
-      customImageUrl = req.files[0].path;
+      // Hanapin ang file na galing sa input field na 'customImage'
+      const imageFile = req.files.find(f => f.fieldname === 'customImage');
+      if (imageFile) {
+        customImageUrl = imageFile.path; // Cloudinary URL ito
+      }
     }
 
     await Cart.create({
@@ -104,20 +110,19 @@ router.post("/cart/add", async (req, res) => {
       selectedSize: selectedSize || null,
       selectedColor: selectedColor || null,
       customText: customText || null,
-      customImageUrl,
+      customImageUrl: customImageUrl, // Ito ang link na masesave sa DB
       totalPrice,
     });
 
     req.session.success = "Item added to cart!";
     res.redirect("/customer/cart");
+
   } catch (err) {
     console.error("❌ Add to cart error:", err.message);
     req.session.error = "Failed to add item to cart.";
     res.redirect("back");
   }
 });
-
-
 
 // POST - Update cart quantity
 router.post("/cart/:cartId/update", async (req, res) => {

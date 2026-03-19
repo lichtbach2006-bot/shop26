@@ -124,8 +124,6 @@
       <p><span class="text-gray-500">Contact:</span> <span class="font-medium"><%= order.contactNumber %></span></p>
       <% if (typeof shipping !== 'undefined' && shipping) { %>
         <hr class="my-3">
-        <p><span class="text-gray-500">Courier:</span> <span class="font-medium"><%= shipping.courierName %></span></p>
-        <p><span class="text-gray-500">Tracking #:</span> <span class="font-medium font-mono"><%= shipping.trackingNumber %></span></p>
         <p><span class="text-gray-500">Status:</span> <span class="font-medium capitalize"><%= shipping.shippingStatus %></span></p>
         <p><span class="text-gray-500">Est. Delivery:</span> <span class="font-medium"><%= new Date(shipping.estimatedDelivery).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) %></span></p>
         <% if (shipping.deliveredAt) { %>
@@ -139,22 +137,41 @@
 
   <!-- Uploaded Files -->
   <div class="bg-white rounded-xl shadow-md p-6">
-    <h2 class="text-lg font-bold text-dark mb-4"><i class="fas fa-images text-primary mr-2"></i>Uploaded Files</h2>
-    <% if (typeof uploadedFiles !== 'undefined' && uploadedFiles.length > 0) { %>
-      <div class="grid grid-cols-3 gap-3">
-        <% uploadedFiles.forEach(file => { %>
-          <a href="<%= file.fileUrl %>" target="_blank" class="relative group">
-            <img src="<%= file.fileUrl %>" alt="<%= file.fileName %>" class="w-full h-24 object-cover rounded-lg border-2 border-gray-200 group-hover:border-primary transition" />
+  <h2 class="text-lg font-bold text-dark mb-4">
+    <i class="fas fa-images text-primary mr-2"></i>Uploaded Inspo Photos
+  </h2>
+  
+  <% 
+    // Gamitin ang 'orderItems' variable imbes na 'order.items'
+    let customImages = [];
+    if (typeof orderItems !== 'undefined' && orderItems.length > 0) {
+      customImages = orderItems.filter(item => item.customImageUrl);
+    }
+  %>
+
+  <% if (customImages.length > 0) { %>
+    <div class="grid grid-cols-3 gap-3">
+      <% customImages.forEach(item => { %>
+        <div class="space-y-1">
+          <a href="<%= item.customImageUrl %>" target="_blank" class="relative group block">
+            <img src="<%= item.customImageUrl %>" 
+                 alt="Custom Inspo" 
+                 class="w-full h-24 object-cover rounded-lg border-2 border-gray-200 group-hover:border-primary transition" />
+            
             <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 rounded-lg transition flex items-center justify-center">
               <i class="fas fa-expand text-white text-lg"></i>
             </div>
           </a>
-        <% }) %>
-      </div>
-    <% } else { %>
-      <p class="text-gray-400 text-sm italic">No files uploaded for this order.</p>
-    <% } %>
-  </div>
+          <p class="text-[10px] text-gray-500 truncate px-1">
+            <%= item.productId ? item.productId.name : 'Product' %>
+          </p>
+        </div>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <p class="text-gray-400 text-sm italic">No custom design/inspo uploaded for this order.</p>
+  <% } %>
+</div>
 </div>
 
 <% if (order.notes) { %>

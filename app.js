@@ -80,6 +80,9 @@ app.use(
         "https://ka-f.fontawesome.com",
         "https://cdn.sheetjs.com",
       ],
+      // 1. DAGDAG ITO: Para payagan ang onchange, onclick, atbp.
+      scriptSrcAttr: ["'unsafe-inline'"], 
+      
       styleSrc: [
         "'self'",
         "'unsafe-inline'",
@@ -100,6 +103,7 @@ app.use(
       imgSrc: [
         "'self'",
         "data:",
+        "blob:", // 2. DAGDAG ITO: Para sa local image preview bago i-upload
         "https://res.cloudinary.com",
       ],
       connectSrc: [
@@ -107,6 +111,7 @@ app.use(
         "https://ka-f.fontawesome.com",
         "https://cdn.jsdelivr.net",
         "https://cdn.tailwindcss.com",
+        "https://res.cloudinary.com", // 3. DAGDAG ITO: Para sa connection sa Cloudinary
       ],
       objectSrc: ["'none'"],
       frameSrc: ["'self'"],
@@ -194,6 +199,16 @@ app.use((req, res, next) => {
     }
     next();
   });
+});
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/') // Siguraduhin na may folder ka na 'uploads' sa root directory mo
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, file.fieldname + '-' + uniqueSuffix + '-' + file.originalname)
+  }
 });
 
 // ==================== ROUTES ====================

@@ -144,3 +144,48 @@
     }
   });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('customImageInput');
+    const placeholder = document.getElementById('upload-placeholder');
+    const preview = document.getElementById('upload-preview');
+    const previewImg = document.getElementById('preview-img');
+    const removeBtn = preview.querySelector('button');
+
+    // 1. Trigger file selection kapag clinick ang dropzone
+    if (dropzone && fileInput) {
+        dropzone.addEventListener('click', function(e) {
+            if (e.target !== fileInput && !e.target.closest('button')) {
+                fileInput.click();
+            }
+        });
+    }
+
+    // 2. Imbes na 'onchange' sa HTML, dito natin ilagay ang listener (Iwas CSP error)
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    placeholder.classList.add('hidden');
+                    preview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    }
+
+    // 3. Remove Button Logic
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); // Stop dropzone from opening file selector
+            fileInput.value = "";
+            previewImg.src = "";
+            placeholder.classList.remove('hidden');
+            preview.classList.add('hidden');
+        });
+    }
+});
+</script>

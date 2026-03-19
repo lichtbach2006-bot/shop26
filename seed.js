@@ -140,18 +140,36 @@ async function seed() {
     console.log("✅ Connected to database");
 
     // ---------- SEED USERS ----------
-    console.log("\n👤 Seeding users...");
-    for (const userData of seedUsers) {
-      const exists = await User.findOne({ email: userData.email });
-      if (exists) {
-        console.log(`   ⏭️  ${userData.email} already exists, skipping`);
-        continue;
-      }
+   // Sa loob ng seed() function mo:
+console.log("\n👤 Seeding users...");
+for (const userData of seedUsers) {
+  // 1. Siguraduhin nating malinis ang email
+  const cleanEmail = userData.email.toLowerCase();
 
-      const hashedPassword = await bcrypt.hash(userData.password, 12);
-      await User.create({ ...userData, password: hashedPassword });
-      console.log(`   ✅ Created ${userData.role}: ${userData.email} (password: ${userData.password})`);
-    }
+  const exists = await User.findOne({ email: cleanEmail });
+  if (exists) {
+    console.log(`  ⏭️  ${cleanEmail} already exists, skipping`);
+    continue;
+  }
+
+  // 2. Hash ang password
+  const hashedPassword = await bcrypt.hash(userData.password, 12);
+
+  // 3. I-create ang user gamit ang tamang fields
+  await User.create({
+    firstName: userData.firstName,
+    lastName: userData.lastName,
+    email: cleanEmail,
+    password: hashedPassword,
+    phoneNumber: userData.phoneNumber,
+    address: userData.address,
+    role: userData.role,
+    status: "active",
+    isArchived: false // 👈 Explicitly set this!
+  });
+
+  console.log(`  ✅ Created ${userData.role}: ${cleanEmail}`);
+}
 
     // ---------- SEED PRODUCTS ----------
     console.log("\n📦 Seeding products...");
