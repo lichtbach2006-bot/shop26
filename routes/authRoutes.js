@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const User = require("../models/User");
+const sgMail = require('@sendgrid/mail');
+const crypto = require('crypto'); // Built-in sa Node.js
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // ==================== LOGIN ====================
 // GET - Show login page
@@ -119,6 +122,61 @@ router.get("/logout", (req, res) => {
     if (err) console.error("❌ Logout error:", err.message);
     res.redirect("/");
   });
+});
+
+router.post("/forgot-password", async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email: email.toLowerCase(), isArchived: false });
+
+        if (!user) {
+            // Para sa security, huwag sabihin kung ang email ay wala sa DB. 
+            // Sabihin na lang na "Check your email".
+            req.session.success = "If that email exists in our system, a temporary password has been sent.";
+            return res.redirect("/auth/login");
+        }
+
+        // 1. Generate random temporary password
+        const tempPassword = crypto.randomBytes(4).toString('hex'); // Halimbawa: 'a1b2c3d4'
+        
+        // 2. Hash the temporary password
+        const salt = await bcrypt.genSalt(12);
+        const hashedTempPassword = await bcrypt.hash(tempPassword, salt);
+
+        // 3. Update User in Database
+        user.password = hashedTempPassword;
+        await user.save();
+
+        // 4. Send Email via SendGrid
+        const msg = {
+            to: user.email,
+            from: process.env.FROM_EMAIL, // Dapat verified ito sa SendGrid
+            subject: 'Temporary Password - KDY\'s Arts & Crafts',
+            html: `
+                <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #333;">Password Reset Request</h2>
+                    <p>Hello ${user.firstName},</p>
+                    <p>Natanggap namin ang iyong request para sa password reset. Narito ang iyong temporary password:</p>
+                    <div style="background: #f4f4f4; padding: 10px; font-size: 20px; font-weight: bold; text-align: center; letter-spacing: 2px;">
+                        ${tempPassword}
+                    </div>
+                    <p style="color: #666; font-size: 12px; margin-top: 20px;">
+                        Paalala: Pakipalitan agad ang password na ito pagkalogin para sa iyong seguridad.
+                    </p>
+                </div>
+            `,
+        };
+
+        await sgMail.send(msg);
+
+        req.session.success = "A temporary password has been sent to your email.";
+        return res.redirect("/auth/login");
+
+    } catch (err) {
+        console.error("❌ SendGrid Error:", err.message);
+        req.session.error = "Failed to send email. Please try again later.";
+        return res.redirect("/auth/login");
+    }
 });
 
 module.exports = router;

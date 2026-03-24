@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/lichtbach2006-bot/order26#readme",
   "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
     "bcrypt": "^6.0.0",
     "cloudinary": "^1.41.3",
     "connect-flash": "^0.1.1",
