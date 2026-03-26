@@ -159,12 +159,10 @@ router.post("/orders/:orderId/status", async (req, res) => {
 // POST - Add shipping info
 router.post("/orders/:orderId/shipping", async (req, res) => {
   try {
-    const { courierName, trackingNumber, estimatedDelivery } = req.body;
+    const { estimatedDelivery } = req.body;
 
     await Shipping.create({
       orderId: req.params.orderId,
-      courierName,
-      trackingNumber,
       estimatedDelivery,
     });
 
@@ -175,7 +173,7 @@ router.post("/orders/:orderId/shipping", async (req, res) => {
       await Notification.create({
         userId: order.userId,
         title: "Order Shipped!",
-        message: `Your order #${order.orderNumber} has been shipped via ${courierName}. Tracking #: ${trackingNumber}`,
+        message: `Your order #${order.orderNumber} has been shipped`,
         type: "order_update",
       });
     }
