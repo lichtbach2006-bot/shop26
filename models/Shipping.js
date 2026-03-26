@@ -9,12 +9,12 @@ const shippingSchema = new mongoose.Schema(
     },
     courierName: {
       type: String,
-      required: [true, "Courier name is required"],
+      required: false,
       trim: true,
     },
     trackingNumber: {
       type: String,
-      required: [true, "Tracking number is required"],
+      required: false,
       unique: true,
       trim: true,
     },
