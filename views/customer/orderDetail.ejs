@@ -1,5 +1,6 @@
 <% layout('layouts/main') %>
 
+<% if ( order.status === "pending") { %>
 <div class="mb-4 flex items-center justify-between width-full">
   <a href="/customer/orders" class="text-primary hover:underline text-sm"><i class="fas fa-arrow-left mr-1"></i>Back to My Orders</a> 
   <form action="/customer/orders/<%= order._id %>/cancel" method="POST"
@@ -14,6 +15,7 @@
 </form>
 
 </div>
+<% } %>
 
 
 <!-- Order Header -->
