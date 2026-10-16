@@ -55,4 +55,8 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
+// Indexes used by the admin analytics aggregations (no field changes)
+orderSchema.index({ isArchived: 1, createdAt: -1 });
+orderSchema.index({ userId: 1, createdAt: -1 });
+
 module.exports = mongoose.model("Order", orderSchema);

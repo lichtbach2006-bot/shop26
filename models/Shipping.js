@@ -35,4 +35,7 @@ const shippingSchema = new mongoose.Schema(
   }
 );
 
+// Index used by the admin analytics aggregations (no field changes)
+shippingSchema.index({ orderId: 1 });
+
 module.exports = mongoose.model("Shipping", shippingSchema);

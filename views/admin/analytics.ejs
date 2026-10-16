@@ -1,0 +1,600 @@
+<% layout('layouts/main') %>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<style>
+  .tab-btn { border-bottom: 3px solid transparent; }
+  .tab-btn.active { color: #6D28D9; border-bottom-color: #6D28D9; font-weight: 600; }
+  .chart-box { position: relative; height: 280px; }
+  .chart-empty { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 1rem; background: rgba(255,255,255,.92); }
+  .chart-box.is-empty .chart-empty { display: flex; }
+  .spinner { width: 2.25rem; height: 2.25rem; border: 4px solid #E9D5FF; border-top-color: #6D28D9; border-radius: 9999px; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<!-- ================= HEADER + FILTERS ================= -->
+<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+  <h1 class="text-3xl font-bold text-dark"><i class="fas fa-chart-pie text-primary mr-2"></i>Analytics</h1>
+  <a href="/admin/dashboard" class="text-primary hover:underline text-sm"><i class="fas fa-arrow-left mr-1"></i>Back to Dashboard</a>
+</div>
+
+<form id="filterForm" class="bg-white rounded-xl shadow-md p-4 mb-4 grid grid-cols-2 md:grid-cols-6 gap-3 items-end" onsubmit="return false;">
+  <div class="col-span-2 md:col-span-1">
+    <label class="block text-xs text-gray-500 mb-1" for="preset">Date range</label>
+    <select id="preset" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+      <option value="7">Last 7 days</option>
+      <option value="30" selected>Last 30 days</option>
+      <option value="90">Last 90 days</option>
+      <option value="month">This month</option>
+      <option value="lastmonth">Last month</option>
+      <option value="year">This year</option>
+      <option value="custom">Custom</option>
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs text-gray-500 mb-1" for="from">From</label>
+    <input id="from" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+  </div>
+  <div>
+    <label class="block text-xs text-gray-500 mb-1" for="to">To</label>
+    <input id="to" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+  </div>
+  <div>
+    <label class="block text-xs text-gray-500 mb-1" for="granularity">Group by</label>
+    <select id="granularity" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+      <option value="auto">Auto</option>
+      <option value="day">Day</option>
+      <option value="week">Week</option>
+      <option value="month">Month</option>
+      <option value="year">Year</option>
+    </select>
+  </div>
+  <div class="col-span-2 md:col-span-2 flex gap-2">
+    <button id="applyBtn" type="button" class="flex-1 bg-primary hover:bg-purple-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+      <i class="fas fa-filter mr-1"></i>Apply
+    </button>
+    <button id="refreshBtn" type="button" title="Refresh data" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm px-4 py-2 rounded-lg transition">
+      <i class="fas fa-rotate-right"></i><span class="sr-only">Refresh</span>
+    </button>
+    <a id="exportBtn" href="#" class="hidden bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap">
+      <i class="fas fa-file-csv mr-1"></i>CSV
+    </a>
+  </div>
+</form>
+<p id="filterError" class="hidden mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></p>
+<p class="text-xs text-gray-500 mb-4">All dates use Asia/Manila time. Amounts are in Philippine pesos (&#8369;).</p>
+
+<!-- ================= TABS ================= -->
+<div class="bg-white rounded-t-xl shadow-md overflow-x-auto">
+  <div class="flex min-w-max" id="tabs" role="tablist">
+    <button class="tab-btn active px-5 py-3 text-sm text-gray-600" data-tab="overview"><i class="fas fa-gauge-high mr-1"></i>Overview</button>
+    <button class="tab-btn px-5 py-3 text-sm text-gray-600" data-tab="sales"><i class="fas fa-peso-sign mr-1"></i>Sales</button>
+    <button class="tab-btn px-5 py-3 text-sm text-gray-600" data-tab="orders"><i class="fas fa-clipboard-list mr-1"></i>Orders</button>
+    <button class="tab-btn px-5 py-3 text-sm text-gray-600" data-tab="products"><i class="fas fa-boxes-stacked mr-1"></i>Products</button>
+    <button class="tab-btn px-5 py-3 text-sm text-gray-600" data-tab="customers"><i class="fas fa-users mr-1"></i>Customers</button>
+    <button class="tab-btn px-5 py-3 text-sm text-gray-600" data-tab="performance"><i class="fas fa-server mr-1"></i>Performance</button>
+  </div>
+</div>
+
+<!-- ================= PANELS ================= -->
+<% ['overview','sales','orders','products','customers','performance'].forEach(function(t) { %>
+  <section id="panel-<%= t %>" class="panel <%= t === 'overview' ? '' : 'hidden' %> pt-6">
+    <div class="state-loading flex flex-col items-center justify-center py-16 text-gray-500">
+      <div class="spinner mb-3"></div>
+      <p class="text-sm">Loading analytics&hellip;</p>
+    </div>
+    <div class="state-error hidden bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+      <p class="text-red-700 font-semibold mb-1"><i class="fas fa-triangle-exclamation mr-1"></i>Couldn't load this section</p>
+      <p class="state-error-msg text-sm text-red-600 mb-3"></p>
+      <button type="button" class="retry-btn bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-lg">Try again</button>
+    </div>
+    <div class="state-content hidden"></div>
+  </section>
+<% }) %>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------------------------------------------------------------- config
+  var DEFAULTS = <%- JSON.stringify(defaults).replace(/</g, '\\u003c') %>;
+  var BASE = '/admin/analytics';
+  var EXPORTABLE = ['sales', 'orders', 'products', 'customers', 'performance'];
+  var STATUS_COLORS = { pending: '#EAB308', processing: '#3B82F6', ready: '#A855F7', shipped: '#6366F1', delivered: '#22C55E', cancelled: '#EF4444' };
+  var PALETTE = ['#6D28D9', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#F97316', '#14B8A6'];
+  var PRIMARY = '#6D28D9', ACCENT = '#EC4899', MUTED = '#9CA3AF';
+
+  var state = {
+    tab: 'overview', from: DEFAULTS.from, to: DEFAULTS.to, granularity: 'auto',
+    status: '', category: '', lowStock: 10,
+    productPage: 1, productSort: 'revenue', customerPage: 1, customerSort: 'spend',
+    window: '24h', errPage: 1
+  };
+  var charts = {};
+  var loaded = {};
+  var tokens = {};
+  var lastData = {};
+
+  // ---------------------------------------------------------------- helpers
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function peso(n) { return n == null ? '—' : '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function num(n) { return n == null ? '—' : Number(n).toLocaleString('en-PH'); }
+  function pct(n) { return n == null ? '—' : Number(n).toFixed(1) + '%'; }
+  function ms(n) { return n == null ? '—' : (n >= 1000 ? (n / 1000).toFixed(2) + ' s' : Number(n).toFixed(1) + ' ms'); }
+  function dur(n) {
+    if (n == null) return '—';
+    var m = Math.round(n / 60000);
+    if (m < 60) return m + ' min';
+    var h = Math.floor(m / 60);
+    if (h < 48) return h + ' h ' + (m % 60) + ' min';
+    var d = Math.floor(h / 24);
+    return d + ' d ' + (h % 24) + ' h';
+  }
+  function cap(s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '); }
+  function when(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+  function manilaToday() { return new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10); }
+  function addDays(str, n) { return new Date(new Date(str + 'T00:00:00Z').getTime() + n * 86400000).toISOString().slice(0, 10); }
+
+  function growthBadge(g) {
+    if (g == null) return '<span class="text-xs text-gray-400">No previous-period sales to compare</span>';
+    var up = g >= 0;
+    return '<span class="text-xs font-semibold ' + (up ? 'text-green-600' : 'text-red-600') + '"><i class="fas fa-arrow-' + (up ? 'up' : 'down') + ' mr-1"></i>' +
+      Math.abs(g).toFixed(1) + '% vs previous period</span>';
+  }
+
+  function card(label, value, opts) {
+    opts = opts || {};
+    var color = opts.color || 'primary';
+    var link = opts.tab ? ' data-goto="' + opts.tab + '"' : '';
+    return '<div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-' + color + (opts.tab ? ' cursor-pointer card-hover' : '') + '"' + link + '>' +
+      '<p class="text-gray-500 text-sm">' + esc(label) + '</p>' +
+      '<h3 class="text-2xl font-bold text-dark mt-1 break-words">' + value + '</h3>' +
+      (opts.sub ? '<div class="mt-1 text-xs text-gray-500">' + opts.sub + '</div>' : '') + '</div>';
+  }
+  function grid(cards, cols) {
+    return '<div class="grid grid-cols-1 sm:grid-cols-2 ' + (cols || 'lg:grid-cols-4') + ' gap-4 mb-6">' + cards.join('') + '</div>';
+  }
+  function box(title, id, extra) {
+    return '<div class="bg-white rounded-xl shadow-md p-5">' +
+      '<h3 class="font-bold text-dark mb-3">' + title + '</h3>' +
+      '<div class="chart-box" id="box-' + id + '"><canvas id="' + id + '" role="img" aria-label="' + esc(title.replace(/<[^>]+>/g, '')) + '"></canvas>' +
+      '<div class="chart-empty text-gray-400 text-sm"><div><i class="fas fa-chart-simple text-2xl mb-2"></i><p>No data for this selection yet.</p></div></div></div>' +
+      (extra || '') + '</div>';
+  }
+  function section(title, inner) {
+    return '<div class="bg-white rounded-xl shadow-md p-5 mb-6"><h3 class="font-bold text-dark mb-3">' + title + '</h3>' + inner + '</div>';
+  }
+  function table(headers, rows, emptyMsg) {
+    if (!rows.length) return '<p class="text-gray-400 text-sm text-center py-6">' + esc(emptyMsg || 'No data to display.') + '</p>';
+    return '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-b border-gray-200 text-gray-500 text-left">' +
+      headers.map(function (h) { return '<th class="pb-2 pr-3 font-medium whitespace-nowrap">' + h + '</th>'; }).join('') +
+      '</tr></thead><tbody>' + rows.map(function (r) {
+        return '<tr class="border-b border-gray-100 hover:bg-gray-50">' + r.map(function (c) { return '<td class="py-2 pr-3">' + c + '</td>'; }).join('') + '</tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+  function pager(prefix, p) {
+    if (!p || p.pages <= 1) return '';
+    return '<div class="flex items-center justify-between mt-3 text-sm text-gray-600">' +
+      '<span>Page ' + p.page + ' of ' + p.pages + ' &middot; ' + num(p.total) + ' total</span><div class="flex gap-2">' +
+      '<button type="button" class="px-3 py-1 rounded border border-gray-300 disabled:opacity-40" data-page-' + prefix + '="' + (p.page - 1) + '"' + (p.page <= 1 ? ' disabled' : '') + '>Prev</button>' +
+      '<button type="button" class="px-3 py-1 rounded border border-gray-300 disabled:opacity-40" data-page-' + prefix + '="' + (p.page + 1) + '"' + (p.page >= p.pages ? ' disabled' : '') + '>Next</button></div></div>';
+  }
+  function definitions(list) {
+    return '<details class="bg-white rounded-xl shadow-md p-5 mb-6"><summary class="cursor-pointer font-semibold text-dark">' +
+      '<i class="fas fa-circle-info text-primary mr-1"></i>How is this calculated?</summary><ul class="list-disc pl-6 mt-3 space-y-1 text-sm text-gray-600">' +
+      list.map(function (d) { return '<li>' + esc(d) + '</li>'; }).join('') + '</ul></details>';
+  }
+  function statusPill(s) {
+    var c = STATUS_COLORS[s] || MUTED;
+    return '<span class="px-2 py-0.5 rounded-full text-xs font-semibold" style="background:' + c + '22;color:' + c + '">' + esc(cap(s)) + '</span>';
+  }
+
+  // ---------------------------------------------------------------- charts
+  function chart(id, type, labels, datasets, extra, hasData) {
+    var boxEl = $('box-' + id);
+    if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+    if (!boxEl) return;
+    boxEl.classList.toggle('is-empty', !hasData);
+    if (!hasData || typeof Chart === 'undefined') return;
+    var cfg = {
+      type: type,
+      data: { labels: labels, datasets: datasets },
+      options: Object.assign({
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+      }, extra || {})
+    };
+    charts[id] = new Chart($(id), cfg);
+  }
+  function moneyAxis() { return { beginAtZero: true, ticks: { callback: function (v) { return '₱' + Number(v).toLocaleString('en-PH'); } } }; }
+  function moneyTip() { return { callbacks: { label: function (c) { return ' ' + c.dataset.label + ': ' + peso(c.parsed.y != null ? c.parsed.y : c.parsed.x); } } }; }
+  function intAxis() { return { beginAtZero: true, ticks: { precision: 0 } }; }
+  function anyPositive(arr) { return arr.some(function (v) { return Number(v) > 0; }); }
+  function doughnut(id, labels, values, colors, valueFmt) {
+    chart(id, 'doughnut', labels, [{ data: values, backgroundColor: colors, borderWidth: 1 }], {
+      interaction: { mode: 'nearest' },
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } }, tooltip: { callbacks: { label: function (c) { return ' ' + c.label + ': ' + (valueFmt ? valueFmt(c.parsed) : num(c.parsed)); } } } }
+    }, anyPositive(values));
+  }
+
+  // ---------------------------------------------------------------- renderers
+  var render = {};
+
+  render.overview = function (d) {
+    var s = d.sales, o = d.orders, p = d.products, c = d.customers, f = d.performance;
+    var html = '';
+    html += grid([
+      card('Sales (delivered orders)', peso(s.netSales), { color: 'green-500', tab: 'sales', sub: growthBadge(s.growthPct) + '<br>' + num(s.completedSales) + ' completed &middot; AOV ' + peso(s.averageOrderValue) }),
+      card('Orders', num(o.total), { color: 'primary', tab: 'orders', sub: num(o.pending) + ' pending &middot; ' + pct(o.completionRate) + ' completed &middot; ' + pct(o.cancellationRate) + ' cancelled' }),
+      card('Products', num(p.totalProducts), { color: 'secondary', tab: 'products', sub: num(p.lowStockCount) + ' low stock (' + num(p.outOfStockCount) + ' out)<br>' + (p.bestSeller ? 'Top: ' + esc(p.bestSeller.name) + ' (' + num(p.bestSeller.qty) + ')' : 'No sales in range') }),
+      card('Customers', num(c.totalRegistered), { color: 'accent', tab: 'customers', sub: num(c.newCustomers) + ' new &middot; ' + num(c.activeCustomers) + ' active &middot; ' + num(c.repeatCustomers) + ' repeat' })
+    ]);
+    html += grid([
+      card('System performance (24 h)', f.hasData ? ms(f.avgResponseMs) + ' <span class="text-sm font-normal text-gray-500">avg response</span>' : '<span class="text-base font-medium text-gray-400">No data collected yet</span>', { color: 'indigo-500', tab: 'performance', sub: f.hasData ? 'Server error rate ' + pct(f.serverErrorRate) : 'Metrics appear after the server handles requests' }),
+      card('Avg order processing time', dur(f.avgProcessingMs), { color: 'blue-500', tab: 'performance', sub: 'Order placed &rarr; shipped (selected range)' })
+    ], 'lg:grid-cols-2');
+    html += '<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6"><div class="lg:col-span-2">' + box('Sales trend', 'ov-sales') + '</div>' + box('Orders by status', 'ov-status') + '</div>';
+    html += definitions(d.definitions);
+    return html;
+  };
+  render.overview.after = function (d) {
+    var t = d.salesTrend;
+    chart('ov-sales', 'line', t.map(function (x) { return x.period; }), [
+      { label: 'Revenue', data: t.map(function (x) { return x.revenue; }), borderColor: PRIMARY, backgroundColor: PRIMARY + '22', fill: true, tension: .3 }
+    ], { interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false }, tooltip: moneyTip() }, scales: { y: moneyAxis() } }, anyPositive(t.map(function (x) { return x.revenue; })));
+    var keys = Object.keys(d.byStatus);
+    doughnut('ov-status', keys.map(cap), keys.map(function (k) { return d.byStatus[k]; }), keys.map(function (k) { return STATUS_COLORS[k]; }));
+  };
+
+  render.sales = function (d) {
+    var s = d.summary;
+    var html = grid([
+      card('Net sales', peso(s.netSales), { color: 'green-500', sub: growthBadge(s.growthPct) }),
+      card('Completed sales', num(s.completedSales), { color: 'primary', sub: 'Previous period: ' + num(s.previous.completedSales) }),
+      card('Average order value', peso(s.averageOrderValue), { color: 'secondary', sub: 'Previous period: ' + peso(s.previous.averageOrderValue) }),
+      card('Open orders (not yet sales)', peso(s.openOrdersValue), { color: 'blue-500', sub: num(s.openOrdersCount) + ' order(s) pending to shipped' })
+    ]);
+    html += section('Sales breakdown',
+      table(['Item', 'Amount', 'Note'], [
+        ['Gross sales', '<strong>' + peso(s.grossSales) + '</strong>', 'Delivered orders in range'],
+        ['Discounts', '<span class="text-gray-400">N/A</span>', 'Not tracked by the system'],
+        ['Refunds', '<span class="text-gray-400">N/A</span>', 'Not tracked by the system'],
+        ['Net sales', '<strong>' + peso(s.netSales) + '</strong>', 'Gross − discounts − refunds'],
+        ['Cancelled (excluded)', peso(s.cancelledValue), num(s.cancelledCount) + ' cancelled order(s), never counted as sales']
+      ]));
+    html += '<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6"><div class="lg:col-span-2">' + box('Sales trend (by ' + esc(d.granularity) + ')', 'sa-trend') + '</div>' + box('Sales by product category', 'sa-cat') + '</div>';
+    html += '<div class="mb-6">' + box('Sales by calendar period vs previous period', 'sa-periods') + '</div>';
+    html += definitions(d.definitions);
+    return html;
+  };
+  render.sales.after = function (d) {
+    var t = d.trend;
+    chart('sa-trend', 'line', t.map(function (x) { return x.period; }), [
+      { label: 'Current period', data: t.map(function (x) { return x.revenue; }), borderColor: PRIMARY, backgroundColor: PRIMARY + '22', fill: true, tension: .3 },
+      { label: 'Previous period', data: t.map(function (x) { return x.previousRevenue; }), borderColor: MUTED, borderDash: [6, 4], pointRadius: 2, tension: .3 }
+    ], { interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom' }, tooltip: moneyTip() }, scales: { y: moneyAxis() } },
+      anyPositive(t.map(function (x) { return x.revenue; })) || anyPositive(t.map(function (x) { return x.previousRevenue; })));
+
+    var cats = d.categories;
+    doughnut('sa-cat', cats.map(function (c) { return cap(c.category); }), cats.map(function (c) { return c.revenue; }), PALETTE, peso);
+
+    var p = d.periodTotals;
+    chart('sa-periods', 'bar', p.map(function (x) { return x.currentLabel + ' vs ' + x.previousLabel; }), [
+      { label: 'Current (to date)', data: p.map(function (x) { return x.revenue.current; }), backgroundColor: PRIMARY },
+      { label: 'Previous (full period)', data: p.map(function (x) { return x.revenue.previous; }), backgroundColor: MUTED }
+    ], { plugins: { legend: { position: 'bottom' }, tooltip: moneyTip() }, scales: { y: moneyAxis() } },
+      anyPositive(p.map(function (x) { return x.revenue.current; })) || anyPositive(p.map(function (x) { return x.revenue.previous; })));
+  };
+
+  render.orders = function (d) {
+    var s = d.summary;
+    var html = '<div class="flex flex-wrap items-end gap-3 mb-4"><div><label class="block text-xs text-gray-500 mb-1" for="orderStatus">Volume chart status filter</label>' +
+      '<select id="orderStatus" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"><option value="">All statuses</option>' +
+      DEFAULTS.statuses.map(function (st) { return '<option value="' + st + '"' + (state.status === st ? ' selected' : '') + '>' + cap(st) + '</option>'; }).join('') +
+      '</select></div></div>';
+    html += grid([
+      card('Total orders', num(s.total), { color: 'primary' }),
+      card('Completion rate', pct(s.completionRate), { color: 'green-500', sub: num(s.completed) + ' completed' }),
+      card('Cancellation rate', pct(s.cancellationRate), { color: 'red-500', sub: num(s.cancelled) + ' cancelled' }),
+      card('Pending', num(s.pending), { color: 'yellow-500' }),
+      card('Processing', num(s.processing), { color: 'blue-500' }),
+      card('Ready for pickup', num(s.ready), { color: 'purple-500' }),
+      card('Shipped', num(s.shipped), { color: 'indigo-500' }),
+      card('Completed (delivered)', num(s.completed), { color: 'green-500' })
+    ]);
+    var common = d.mostCommonStatuses.length ? d.mostCommonStatuses.map(function (m) { return statusPill(m.status) + ' <span class="text-xs text-gray-500 mr-3">' + num(m.count) + '</span>'; }).join('') : '<span class="text-sm text-gray-400">No orders in this range.</span>';
+    var peak = d.peakPeriod ? '<strong>' + esc(d.peakPeriod.period) + '</strong> (' + num(d.peakPeriod.orders) + ' orders)' : '—';
+    var low = d.lowPeriod ? '<strong>' + esc(d.lowPeriod.period) + '</strong> (' + num(d.lowPeriod.orders) + ' orders)' : '—';
+    html += section('Order activity highlights',
+      '<div class="space-y-2 text-sm"><p><span class="text-gray-500">Most common statuses:</span> ' + common + '</p>' +
+      '<p><span class="text-gray-500">Highest-volume ' + esc(d.granularity) + ':</span> ' + peak + '</p>' +
+      '<p><span class="text-gray-500">Lowest-volume ' + esc(d.granularity) + ':</span> ' + low + '</p></div>');
+    html += '<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6"><div>' + box('Orders by status', 'or-status') + '</div><div class="lg:col-span-2">' +
+      box('Order volume (by ' + esc(d.granularity) + (d.statusFilter ? ', ' + esc(d.statusFilter) + ' only' : '') + ')', 'or-volume') + '</div></div>';
+    html += '<div class="mb-6">' + box('Orders by calendar period vs previous period', 'or-periods') + '</div>';
+    html += definitions(d.definitions);
+    return html;
+  };
+  render.orders.after = function (d) {
+    var keys = Object.keys(d.byStatus);
+    doughnut('or-status', keys.map(cap), keys.map(function (k) { return d.byStatus[k]; }), keys.map(function (k) { return STATUS_COLORS[k]; }));
+    chart('or-volume', 'line', d.volume.map(function (x) { return x.period; }), [
+      { label: 'Orders', data: d.volume.map(function (x) { return x.orders; }), borderColor: ACCENT, backgroundColor: ACCENT + '22', fill: true, tension: .3 }
+    ], { plugins: { legend: { display: false } }, scales: { y: intAxis() } }, d.volumeTotal > 0);
+    var p = d.periodTotals;
+    chart('or-periods', 'bar', p.map(function (x) { return x.currentLabel + ' vs ' + x.previousLabel; }), [
+      { label: 'Current (to date)', data: p.map(function (x) { return x.orders.current; }), backgroundColor: ACCENT },
+      { label: 'Previous (full period)', data: p.map(function (x) { return x.orders.previous; }), backgroundColor: MUTED }
+    ], { scales: { y: intAxis() } }, anyPositive(p.map(function (x) { return x.orders.current + x.orders.previous; })));
+    var sel = $('orderStatus');
+    if (sel) sel.addEventListener('change', function () { state.status = sel.value; load('orders'); });
+  };
+
+  render.products = function (d) {
+    var s = d.summary;
+    var html = '<div class="flex flex-wrap items-end gap-3 mb-4">' +
+      '<div><label class="block text-xs text-gray-500 mb-1" for="prodCategory">Category</label><select id="prodCategory" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"><option value="">All categories</option>' +
+      DEFAULTS.categories.map(function (c) { return '<option value="' + c + '"' + (state.category === c ? ' selected' : '') + '>' + cap(c) + '</option>'; }).join('') + '</select></div>' +
+      '<div><label class="block text-xs text-gray-500 mb-1" for="lowStock">Low-stock threshold</label><input id="lowStock" type="number" min="0" max="100000" value="' + d.lowStockThreshold + '" class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-28" /></div></div>';
+    html += grid([
+      card('Total products', num(s.totalProducts), { color: 'primary', sub: d.categoryFilter ? 'In ' + esc(cap(d.categoryFilter)) : 'Active products' }),
+      card('Total quantity sold', num(s.totalQuantitySold), { color: 'green-500', sub: 'Delivered orders in range' }),
+      card('Product revenue', peso(s.productRevenue), { color: 'secondary' }),
+      card('Low-stock products', num(s.lowStockCount), { color: 'red-500', sub: num(s.outOfStockCount) + ' out of stock (threshold ≤ ' + d.lowStockThreshold + ')' })
+    ]);
+    html += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">' + box('Top 10 best-selling products (units)', 'pr-best') + box('Revenue by product (top 10)', 'pr-rev') + '</div>';
+    html += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">' + box('Category performance', 'pr-cat') + box('Inventory levels (10 lowest stock)', 'pr-inv') + '</div>';
+    html += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">' +
+      '<div class="bg-white rounded-xl shadow-md p-5"><h3 class="font-bold text-dark mb-3">Lowest-selling products</h3>' +
+      table(['Product', 'Category', 'Units', 'Revenue'], d.lowestSelling.map(function (r) { return [esc(r.name), esc(cap(r.category)), num(r.qty), peso(r.revenue)]; }), 'No products found.') + '</div>' +
+      '<div class="bg-white rounded-xl shadow-md p-5"><h3 class="font-bold text-dark mb-3">Low-stock products</h3>' +
+      table(['Product', 'Category', 'Stock', 'Status'], d.lowStock.slice(0, 15).map(function (r) { return [esc(r.name), esc(cap(r.category)), '<strong class="' + (r.stock === 0 ? 'text-red-600' : 'text-yellow-600') + '">' + num(r.stock) + '</strong>', esc(cap(r.status))]; }), 'No low-stock products.') +
+      (d.lowStock.length > 15 ? '<p class="text-xs text-gray-500 mt-2">Showing 15 of ' + d.lowStock.length + ' &mdash; export the CSV for the full list.</p>' : '') + '</div></div>';
+    html += section('All products',
+      '<div class="flex items-center gap-2 mb-3 text-sm"><label for="prodSort" class="text-gray-500">Sort by</label><select id="prodSort" class="border border-gray-300 rounded-lg px-2 py-1">' +
+      [['revenue', 'Revenue'], ['qty', 'Units sold'], ['name', 'Name'], ['stock', 'Stock']].map(function (o) { return '<option value="' + o[0] + '"' + (d.table.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
+      table(['Product', 'Category', 'Stock', 'Units sold', 'Revenue'], d.table.rows.map(function (r) {
+        return [esc(r.name), esc(cap(r.category)), r.stock == null ? '—' : num(r.stock), num(r.qty), peso(r.revenue)];
+      }), 'No products found.') + pager('products', d.table));
+    html += definitions(d.definitions);
+    return html;
+  };
+  render.products.after = function (d) {
+    var hbar = { indexAxis: 'y', plugins: { legend: { display: false } } };
+    chart('pr-best', 'bar', d.bestSelling.map(function (r) { return r.name; }), [{ label: 'Units sold', data: d.bestSelling.map(function (r) { return r.qty; }), backgroundColor: PRIMARY }],
+      Object.assign({}, hbar, { scales: { x: intAxis() } }), d.bestSelling.length > 0);
+    chart('pr-rev', 'bar', d.topRevenue.map(function (r) { return r.name; }), [{ label: 'Revenue', data: d.topRevenue.map(function (r) { return r.revenue; }), backgroundColor: ACCENT }],
+      { plugins: { legend: { display: false }, tooltip: moneyTip() }, scales: { y: moneyAxis(), x: { ticks: { maxRotation: 60, minRotation: 30 } } } }, d.topRevenue.length > 0);
+    chart('pr-cat', 'bar', d.categories.map(function (c) { return cap(c.category); }), [
+      { label: 'Revenue (₱)', data: d.categories.map(function (c) { return c.revenue; }), backgroundColor: PRIMARY, yAxisID: 'y' },
+      { label: 'Units sold', data: d.categories.map(function (c) { return c.qty; }), backgroundColor: '#F59E0B', yAxisID: 'y1' }
+    ], { scales: { y: moneyAxis(), y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { precision: 0 } } } }, d.categories.length > 0);
+    chart('pr-inv', 'bar', d.inventory.map(function (r) { return r.name; }), [{ label: 'Units in stock', data: d.inventory.map(function (r) { return r.stock; }),
+      backgroundColor: d.inventory.map(function (r) { return r.stock === 0 ? '#EF4444' : r.stock <= d.lowStockThreshold ? '#EAB308' : '#10B981'; }) }],
+      Object.assign({}, hbar, { scales: { x: intAxis() } }), d.inventory.length > 0);
+
+    var cat = $('prodCategory'), low = $('lowStock'), sort = $('prodSort');
+    if (cat) cat.addEventListener('change', function () { state.category = cat.value; state.productPage = 1; load('products'); });
+    if (low) low.addEventListener('change', function () { var v = parseInt(low.value, 10); state.lowStock = isNaN(v) || v < 0 ? 10 : v; state.productPage = 1; load('products'); });
+    if (sort) sort.addEventListener('change', function () { state.productSort = sort.value; state.productPage = 1; load('products'); });
+  };
+
+  render.customers = function (d) {
+    var s = d.summary;
+    var html = grid([
+      card('Registered customers', num(s.totalRegistered), { color: 'primary', sub: 'All-time' }),
+      card('New customers', num(s.newCustomers), { color: 'accent', sub: 'Registered in range' }),
+      card('Active customers', num(s.activeCustomers), { color: 'green-500', sub: 'Ordered in range' }),
+      card('Repeat customers', num(s.repeatCustomers), { color: 'secondary', sub: '2+ delivered orders in range' }),
+      card('Avg spending / customer', peso(s.averageSpendPerCustomer), { color: 'indigo-500', sub: num(s.payingCustomers) + ' paying customer(s)' }),
+      card('Avg orders / customer', s.averageOrdersPerCustomer == null ? '—' : s.averageOrdersPerCustomer.toFixed(2), { color: 'blue-500', sub: 'Non-cancelled orders' }),
+      card('Total customer spend', peso(s.totalSpend), { color: 'green-500', sub: 'Delivered orders' })
+    ]);
+    html += '<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6"><div class="lg:col-span-2">' + box('Customer registrations (by ' + esc(d.granularity) + ')', 'cu-reg') + '</div>' + box('One-time vs repeat customers', 'cu-split') + '</div>';
+    html += '<div class="mb-6">' + box('Top 10 customers by spending', 'cu-top') + '</div>';
+    html += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"><div class="bg-white rounded-xl shadow-md p-5"><h3 class="font-bold text-dark mb-3">Most frequent buyers</h3>' +
+      table(['Customer', 'Orders', 'Spent'], d.topFrequent.map(function (r) { return [esc(r.name), num(r.orders), peso(r.totalSpent)]; }), 'No orders in this range.') + '</div>' +
+      '<div class="bg-white rounded-xl shadow-md p-5"><h3 class="font-bold text-dark mb-3">Top spenders</h3>' +
+      table(['Customer', 'Delivered', 'Spent'], d.topSpenders.slice(0, 5).map(function (r) { return [esc(r.name), num(r.deliveredOrders), peso(r.totalSpent)]; }), 'No delivered orders in this range.') + '</div></div>';
+    html += section('Customer orders & spending',
+      '<div class="flex items-center gap-2 mb-3 text-sm"><label for="custSort" class="text-gray-500">Sort by</label><select id="custSort" class="border border-gray-300 rounded-lg px-2 py-1">' +
+      [['spend', 'Total spent'], ['orders', 'Order count']].map(function (o) { return '<option value="' + o[0] + '"' + (d.table.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
+      table(['Customer', 'E-mail', 'Orders', 'Delivered', 'Total spent', 'Last order'], d.table.rows.map(function (r) {
+        return [esc(r.name), esc(r.email || '—'), num(r.orders), num(r.deliveredOrders), peso(r.totalSpent), r.lastOrderAt ? when(r.lastOrderAt) : '—'];
+      }), 'No customer orders in this range.') + pager('customers', d.table));
+    html += definitions(d.definitions);
+    return html;
+  };
+  render.customers.after = function (d) {
+    chart('cu-reg', 'line', d.registrations.map(function (x) { return x.period; }), [
+      { label: 'New customers', data: d.registrations.map(function (x) { return x.customers; }), borderColor: ACCENT, backgroundColor: ACCENT + '22', fill: true, tension: .3 }
+    ], { plugins: { legend: { display: false } }, scales: { y: intAxis() } }, anyPositive(d.registrations.map(function (x) { return x.customers; })));
+    doughnut('cu-split', ['One-time (1 delivered order)', 'Repeat (2+ delivered orders)'], [d.summary.oneTimeCustomers, d.summary.repeatCustomers], [PRIMARY, '#10B981']);
+    chart('cu-top', 'bar', d.topSpenders.map(function (r) { return r.name; }), [{ label: 'Total spent', data: d.topSpenders.map(function (r) { return r.totalSpent; }), backgroundColor: PRIMARY }],
+      { plugins: { legend: { display: false }, tooltip: moneyTip() }, scales: { y: moneyAxis(), x: { ticks: { maxRotation: 60, minRotation: 30 } } } }, d.topSpenders.length > 0);
+    var sort = $('custSort');
+    if (sort) sort.addEventListener('change', function () { state.customerSort = sort.value; state.customerPage = 1; load('customers'); });
+  };
+
+  render.performance = function (d) {
+    var a = d.api, db = d.database, t = d.orderTimes;
+    var html = '<div class="flex flex-wrap items-center gap-2 mb-4"><span class="text-sm text-gray-500">Server metrics window:</span>' +
+      ['24h', '7d', '30d'].map(function (w) {
+        return '<button type="button" data-window="' + w + '" class="px-3 py-1 rounded-full text-sm border ' + (state.window === w ? 'bg-primary text-white border-primary' : 'border-gray-300 text-gray-600 hover:bg-gray-100') + '">Last ' + w + '</button>';
+      }).join('') + '</div>';
+    if (!d.hasData) {
+      html += '<div class="bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm rounded-xl p-4 mb-6"><i class="fas fa-circle-info mr-1"></i>' +
+        'No server metrics collected in this window yet. Metrics are recorded automatically while the server handles requests' +
+        (d.collectingSince ? ' (collecting since ' + esc(when(d.collectingSince)) + ')' : '') + '.</div>';
+    }
+    html += grid([
+      card('Avg API response time', a.avgResponseMs == null ? '—' : ms(a.avgResponseMs), { color: 'indigo-500', sub: 'Max ' + ms(a.maxResponseMs) + ' &middot; ' + num(a.slowRequests) + ' slow (&ge; 1 s)' }),
+      card('Server error rate', pct(a.serverErrorRate), { color: 'red-500', sub: num(a.serverErrors) + ' 5xx of ' + num(a.totalRequests) + ' requests' }),
+      card('Client errors (4xx)', num(a.clientErrors), { color: 'yellow-500', sub: pct(a.clientErrorRate) + ' of requests' }),
+      card('Total requests', num(a.totalRequests), { color: 'primary', sub: num(a.successful) + ' successful (1xx–3xx)' }),
+      card('DB operation time (avg)', db.avgMs == null ? '—' : ms(db.avgMs), { color: 'blue-500', sub: num(db.queries) + ' ops &middot; ' + num(db.slowQueries) + ' slow (&ge; ' + db.slowThresholdMs + ' ms)' }),
+      card('Order processing time', dur(t.avgProcessingMs), { color: 'green-500', sub: 'Placed → shipped &middot; n=' + num(t.processingSample) }),
+      card('Order fulfillment time', dur(t.avgFulfillmentMs), { color: 'secondary', sub: 'Placed → delivered &middot; n=' + num(t.fulfillmentSample) }),
+      card('Node.js process', Math.floor(d.application.uptimeSeconds / 3600) + ' h ' + Math.floor((d.application.uptimeSeconds % 3600) / 60) + ' m <span class="text-sm font-normal text-gray-500">uptime</span>', { color: 'gray-400', sub: 'Heap ' + d.application.heapUsedMb + ' MB &middot; RSS ' + d.application.rssMb + ' MB' })
+    ]);
+    html += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">' + box('API response time (average)', 'pf-line') + box('Successful vs failed requests', 'pf-bar') + '</div>';
+    html += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">' +
+      '<div class="bg-white rounded-xl shadow-md p-5"><h3 class="font-bold text-dark mb-3">Slowest endpoints</h3>' +
+      table(['Endpoint', 'Requests', 'Avg', 'Max', '5xx'], d.slowestEndpoints.map(function (r) { return ['<code class="text-xs">' + esc(r.endpoint) + '</code>', num(r.count), ms(r.avgMs), ms(r.maxMs), num(r.serverErrors)]; }), 'No requests recorded.') + '</div>' +
+      '<div class="bg-white rounded-xl shadow-md p-5"><h3 class="font-bold text-dark mb-3">Slowest database operations</h3>' +
+      table(['Operation', 'Count', 'Avg', 'Max'], db.slowestOperations.map(function (r) { return ['<code class="text-xs">' + esc(r.operation) + '</code>', num(r.count), ms(r.avgMs), ms(r.maxMs)]; }), 'No database operations recorded.') + '</div></div>';
+    var cats = d.errors.byCategory.map(function (c) { return '<span class="px-2 py-0.5 rounded-full text-xs bg-red-50 text-red-700 mr-1">' + esc(cap(c.category)) + ': ' + num(c.count) + '</span>'; }).join('');
+    html += section('Recent application errors (' + num(d.errors.total) + ')',
+      (cats ? '<p class="mb-3">' + cats + '</p>' : '') +
+      table(['Time', 'Category', 'Endpoint', 'Status', 'Message'], d.errors.rows.map(function (e) {
+        return ['<span class="whitespace-nowrap">' + esc(when(e.at)) + '</span>', esc(cap(e.category)), '<code class="text-xs">' + esc(e.endpoint) + '</code>', esc(e.statusCode), '<span class="text-gray-600">' + esc(e.message) + '</span>'];
+      }), 'No unhandled server errors recorded in this window.') + pager('errors', d.errors));
+    html += '<div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6 text-sm text-gray-600"><i class="fas fa-triangle-exclamation text-yellow-500 mr-1"></i>' +
+      '<strong>Server CPU, RAM and host uptime: not available.</strong> ' + esc(d.infrastructure.note) + '</div>';
+    html += definitions(d.definitions);
+    return html;
+  };
+  render.performance.after = function (d) {
+    var s = d.series;
+    chart('pf-line', 'line', s.map(function (x) { return x.period; }), [
+      { label: 'Avg response (ms)', data: s.map(function (x) { return x.avgMs; }), borderColor: '#6366F1', backgroundColor: '#6366F122', fill: true, tension: .3, spanGaps: true }
+    ], { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'milliseconds' } } } }, d.hasData);
+    chart('pf-bar', 'bar', s.map(function (x) { return x.period; }), [
+      { label: 'Successful', data: s.map(function (x) { return x.ok; }), backgroundColor: '#10B981', stack: 'r' },
+      { label: 'Client errors (4xx)', data: s.map(function (x) { return x.c4xx; }), backgroundColor: '#EAB308', stack: 'r' },
+      { label: 'Server errors (5xx)', data: s.map(function (x) { return x.c5xx; }), backgroundColor: '#EF4444', stack: 'r' }
+    ], { scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } }, d.hasData);
+  };
+
+  // ---------------------------------------------------------------- data loading
+  function params(tab) {
+    var p = { from: state.from, to: state.to };
+    if (['overview', 'sales', 'orders', 'customers'].indexOf(tab) > -1 && state.granularity !== 'auto') p.granularity = state.granularity;
+    if (tab === 'orders' && state.status) p.status = state.status;
+    if (tab === 'products') {
+      if (state.category) p.category = state.category;
+      p.lowStock = state.lowStock; p.page = state.productPage; p.sort = state.productSort;
+    }
+    if (tab === 'customers') { p.page = state.customerPage; p.sort = state.customerSort; }
+    if (tab === 'performance') { p.window = state.window; p.errPage = state.errPage; }
+    return p;
+  }
+  function qs(p) { return Object.keys(p).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(p[k]); }).join('&'); }
+
+  function setPanel(tab, mode, message) {
+    var panel = $('panel-' + tab);
+    panel.querySelector('.state-loading').classList.toggle('hidden', mode !== 'loading');
+    panel.querySelector('.state-error').classList.toggle('hidden', mode !== 'error');
+    panel.querySelector('.state-content').classList.toggle('hidden', mode !== 'ready');
+    if (message) panel.querySelector('.state-error-msg').textContent = message;
+  }
+
+  async function load(tab) {
+    var token = (tokens[tab] = (tokens[tab] || 0) + 1);
+    var panel = $('panel-' + tab);
+    var content = panel.querySelector('.state-content');
+    // Keep the current content visible during re-loads (e.g. paging) once something is shown; otherwise show spinner
+    if (!loaded[tab]) setPanel(tab, 'loading'); else content.style.opacity = '.5';
+    try {
+      var res = await fetch(BASE + '/api/' + tab + '?' + qs(params(tab)), { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+      if (res.status === 401 || res.status === 403) { window.location.href = '/'; return; }
+      var json = await res.json().catch(function () { return { ok: false, error: 'Unexpected server response.' }; });
+      if (token !== tokens[tab]) return; // a newer request superseded this one
+      if (!json.ok) throw new Error(json.error || 'Request failed.');
+      lastData[tab] = json.data;
+      content.innerHTML = render[tab](json.data);
+      content.style.opacity = '1';
+      setPanel(tab, 'ready');
+      render[tab].after(json.data);
+      loaded[tab] = true;
+    } catch (err) {
+      if (token !== tokens[tab]) return;
+      content.style.opacity = '1';
+      loaded[tab] = false;
+      setPanel(tab, 'error', err.message || 'Something went wrong.');
+    }
+  }
+
+  function invalidateAll() { loaded = {}; Object.keys(charts).forEach(function (k) { charts[k].destroy(); delete charts[k]; }); }
+
+  function updateExport() {
+    var btn = $('exportBtn');
+    if (EXPORTABLE.indexOf(state.tab) === -1) { btn.classList.add('hidden'); return; }
+    var p = params(state.tab);
+    delete p.page; delete p.errPage;
+    btn.href = BASE + '/export/' + state.tab + '?' + qs(p);
+    btn.classList.remove('hidden');
+  }
+
+  function showTab(tab) {
+    state.tab = tab;
+    document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === tab); });
+    document.querySelectorAll('.panel').forEach(function (p) { p.classList.toggle('hidden', p.id !== 'panel-' + tab); });
+    updateExport();
+    if (!loaded[tab]) load(tab);
+  }
+
+  // ---------------------------------------------------------------- filters
+  function showFilterError(msg) {
+    var el = $('filterError');
+    el.textContent = msg || '';
+    el.classList.toggle('hidden', !msg);
+  }
+  function applyPreset() {
+    var v = $('preset').value, today = manilaToday(), from = today, to = today;
+    if (v === 'custom') return;
+    if (v === '7' || v === '30' || v === '90') from = addDays(today, -(parseInt(v, 10) - 1));
+    else if (v === 'month') from = today.slice(0, 8) + '01';
+    else if (v === 'lastmonth') {
+      var first = today.slice(0, 8) + '01';
+      to = addDays(first, -1); from = to.slice(0, 8) + '01';
+    } else if (v === 'year') from = today.slice(0, 5) + '01-01';
+    $('from').value = from; $('to').value = to;
+  }
+  function applyFilters() {
+    var from = $('from').value, to = $('to').value;
+    if (!from || !to) return showFilterError('Please choose both a start and an end date.');
+    if (from > to) return showFilterError('The start date must be on or before the end date.');
+    showFilterError('');
+    state.from = from; state.to = to; state.granularity = $('granularity').value;
+    state.productPage = 1; state.customerPage = 1; state.errPage = 1;
+    invalidateAll();
+    updateExport();
+    load(state.tab);
+  }
+
+  // ---------------------------------------------------------------- events
+  document.querySelectorAll('.tab-btn').forEach(function (b) { b.addEventListener('click', function () { showTab(b.dataset.tab); }); });
+  $('preset').addEventListener('change', function () { applyPreset(); if ($('preset').value !== 'custom') applyFilters(); });
+  ['from', 'to'].forEach(function (id) { $(id).addEventListener('change', function () { $('preset').value = 'custom'; }); });
+  $('applyBtn').addEventListener('click', applyFilters);
+  $('refreshBtn').addEventListener('click', function () { invalidateAll(); load(state.tab); });
+  document.querySelectorAll('.retry-btn').forEach(function (b) { b.addEventListener('click', function () { load(state.tab); }); });
+
+  // Delegated clicks for dynamically rendered controls
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest ? e.target.closest('[data-goto],[data-window],[data-page-products],[data-page-customers],[data-page-errors]') : null;
+    if (!t || t.disabled) return;
+    if (t.dataset.goto) return showTab(t.dataset.goto);
+    if (t.dataset.window) { state.window = t.dataset.window; state.errPage = 1; return load('performance'); }
+    if (t.dataset.pageProducts) { state.productPage = parseInt(t.dataset.pageProducts, 10); return load('products'); }
+    if (t.dataset.pageCustomers) { state.customerPage = parseInt(t.dataset.pageCustomers, 10); return load('customers'); }
+    if (t.dataset.pageErrors) { state.errPage = parseInt(t.dataset.pageErrors, 10); return load('performance'); }
+  });
+
+  // ---------------------------------------------------------------- init
+  $('from').value = state.from;
+  $('to').value = state.to;
+  updateExport();
+  load('overview');
+})();
+</script>

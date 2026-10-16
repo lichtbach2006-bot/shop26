@@ -60,4 +60,7 @@ const orderItemSchema = new mongoose.Schema(
   }
 );
 
+// Index used by the admin analytics aggregations (no field changes)
+orderItemSchema.index({ orderId: 1 });
+
 module.exports = mongoose.model("OrderItem", orderItemSchema);

@@ -36,6 +36,9 @@
             <a href="/admin/customers" class="text-gray-300 hover:text-blue-500 transition <%= active === 'customers' ? 'text-blue-500 font-semibold' : '' %>">
               <i class="fas fa-users mr-1"></i> Customers
             </a>
+            <a href="/admin/analytics" class="text-gray-300 hover:text-blue-500 transition <%= active === 'analytics' ? 'text-blue-500 font-semibold' : '' %>">
+              <i class="fas fa-chart-pie mr-1"></i> Analytics
+            </a>
           <% } %>
 
           <!-- User Dropdown -->
@@ -86,6 +89,7 @@
           <a href="/admin/orders" class="block py-2 text-gray-300 hover:text-blue-500">Orders</a>
           <a href="/admin/products" class="block py-2 text-gray-300 hover:text-blue-500">Products</a>
           <a href="/admin/customers" class="block py-2 text-gray-300 hover:text-blue-500">Customers</a>
+          <a href="/admin/analytics" class="block py-2 text-gray-300 hover:text-blue-500">Analytics</a>
         <% } %>
         <a href="<%= user.role === 'admin' ? '/admin/profile' : '/customer/profile' %>" class="block py-2 text-gray-300 hover:text-blue-500">Profile</a>
         <a href="/auth/logout" class="block py-2 text-red-400 hover:text-red-300">Logout</a>

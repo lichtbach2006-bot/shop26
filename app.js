@@ -12,10 +12,15 @@ const multer = require('multer');
 const flash = require('connect-flash');
 const helmet = require('helmet');
 
+// ==================== PERFORMANCE METRICS ====================
+// Must be required BEFORE any model is compiled (it registers a Mongoose timing plugin).
+const { requestMetrics, recordError } = require('./middleware/metrics');
+
 // ==================== ROUTE IMPORTS ====================
 const authRoutes = require('./routes/authRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 1000;
@@ -49,6 +54,9 @@ app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '0',
   etag: true
 }));
+
+// Request timing for the admin Analytics > Performance tab (static files are excluded)
+app.use(requestMetrics);
 
 // ==================== SESSION ====================
 app.use(session({
@@ -218,6 +226,9 @@ app.use('/auth', authRoutes);
 // Customer routes (shop, cart, checkout, orders, notifications, profile)
 app.use('/customer', customerRoutes);
 
+// Admin analytics (page, JSON API, CSV export) - mounted before /admin so it keeps its own JSON-aware guard
+app.use('/admin/analytics', analyticsRoutes);
+
 // Admin routes (dashboard, orders, products, customers, profile)
 app.use('/admin', adminRoutes);
 
@@ -246,6 +257,7 @@ app.use((req, res) => {
 // 500 - Server error
 app.use((err, req, res, next) => {
   console.error('⚠️ Error occurred:', err.message);
+  recordError(req, err, 500);
   res.locals.error = 'Oh no! Something went wrong!';
   res.status(500).render('index', {
     title: 'Server Error',
