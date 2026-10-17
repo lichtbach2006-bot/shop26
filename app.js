@@ -11,6 +11,7 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 const flash = require('connect-flash');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit'); // <--- Idagdag dito ang rate limit package
 
 // ==================== ROUTE IMPORTS ====================
 const authRoutes = require('./routes/authRoutes');
@@ -49,6 +50,24 @@ app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '0',
   etag: true
 }));
+
+// ==================== RATE LIMITING (Security) ====================
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minuto
+  max: 300, // Hanggang 300 requests bawat 15 minuto bawat IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: "Too many requests from this IP, please try again after 15 minutes."
+});
+app.use(globalLimiter);
+
+// Mas mahigpit na limit para sa Login / Auth (Brute-force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10, // Hanggang 10 login attempts lang bawat 15 minuto
+  message: "Too many login attempts from this IP, please try again later."
+});
+app.use('/auth/login', authLimiter);
 
 // ==================== SESSION ====================
 app.use(session({
