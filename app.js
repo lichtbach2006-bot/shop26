@@ -47,7 +47,6 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(morgan('dev'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(mongoSanitize()); // <--- Ang dinagdag natin para sa NoSQL Injection
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '0',
   etag: true
