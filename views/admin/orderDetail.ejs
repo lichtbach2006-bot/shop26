@@ -13,21 +13,8 @@
         <p class="text-gray-500 text-sm mt-1"><i class="fas fa-user mr-1"></i><%= order.userId.firstName %> <%= order.userId.lastName %> (<%= order.userId.email %>)</p>
       <% } %>
     </div>
-    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+    <div class="flex items-center gap-3">
       <span class="text-primary font-bold text-2xl">&#8369;<%= order.totalAmount.toFixed(2) %></span>
-      <form action="/admin/orders/<%= order._id %>/status" method="POST" class="flex items-center gap-2">
-        <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none text-sm">
-          <option value="pending" <%= order.status === 'pending' ? 'selected' : '' %>>Pending</option>
-          <option value="processing" <%= order.status === 'processing' ? 'selected' : '' %>>Processing</option>
-          <option value="ready" <%= order.status === 'ready' ? 'selected' : '' %>>Ready</option>
-          <option value="shipped" <%= order.status === 'shipped' ? 'selected' : '' %>>Shipped</option>
-          <option value="delivered" <%= order.status === 'delivered' ? 'selected' : '' %>>Delivered</option>
-          <option value="cancelled" <%= order.status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
-        </select>
-        <button type="submit" class="bg-primary hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition text-sm font-medium">
-          <i class="fas fa-sync-alt mr-1"></i>Update
-        </button>
-      </form>
     </div>
   </div>
 </div>
@@ -129,7 +116,6 @@
   </h2>
   
   <% 
-    // Kunin lahat ng items na may customImageUrl mula sa orderItems
     let customItems = [];
     if (typeof orderItems !== 'undefined' && orderItems.length > 0) {
       customItems = orderItems.filter(item => item.customImageUrl);
@@ -181,12 +167,3 @@
     <% } %>
   </div>
 </div>
-
-<script>
-  const courierInput = document.getElementById('courierInput');
-
-courierInput.addEventListener('input', function(e) {
-  // Pinapalitan ang lahat ng numero (0-9) ng "empty string"
-  this.value = this.value.replace(/[0-9]/g, '');
-});
-</script>
