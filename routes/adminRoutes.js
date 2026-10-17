@@ -19,15 +19,24 @@ const isAdmin = require("../middleware/isAdmin");
 // All admin routes require login + admin role
 router.use(isLoggedIn, isAdmin);
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
 // ==================== DASHBOARD ====================
 router.get("/dashboard", async (req, res) => {
   try {
     const totalOrders = await Order.countDocuments({ isArchived: false });
     const pendingOrders = await Order.countDocuments({ status: "pending", isArchived: false });
+<<<<<<< HEAD
+=======
+    const deliveredOrdersCount = await Order.countDocuments({ status: "delivered", isArchived: false });
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
     const totalCustomers = await User.countDocuments({ role: "customer", isArchived: false });
     const availableProducts = await Product.countDocuments({ status: "available", isArchived: false });
     const outOfStockProducts = await Product.countDocuments({ status: "out_of_stock", isArchived: false });
 
+<<<<<<< HEAD
     // Total revenue from delivered orders
     const revenueResult = await Order.aggregate([
       { $match: { status: "delivered", isArchived: false } },
@@ -36,6 +45,24 @@ router.get("/dashboard", async (req, res) => {
     const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
 
     // Order breakdown by status
+=======
+    // 1. Sales & Performance Monitoring (Revenue, AOV, Fulfillment Rate)
+    const revenueResult = await Order.aggregate([
+      { $match: { status: "delivered", isArchived: false } },
+      { 
+        $group: { 
+          _id: null, 
+          total: { $sum: "$totalAmount" },
+          avgOrderValue: { $avg: "$totalAmount" } 
+        } 
+      },
+    ]);
+    const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
+    const avgOrderValue = revenueResult.length > 0 ? revenueResult[0].avgOrderValue : 0;
+    const fulfillmentRate = totalOrders > 0 ? ((deliveredOrdersCount / totalOrders) * 100).toFixed(1) : 0;
+
+    // 2. Order Breakdown by Status (Order Analysis)
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
     const breakdownResult = await Order.aggregate([
       { $match: { isArchived: false } },
       { $group: { _id: "$status", count: { $sum: 1 } } },
@@ -43,6 +70,51 @@ router.get("/dashboard", async (req, res) => {
     const orderBreakdown = {};
     breakdownResult.forEach((item) => (orderBreakdown[item._id] = item.count));
 
+<<<<<<< HEAD
+=======
+    // 3. Top 5 Best-Selling Products (Product Analysis)
+    // Note: Siguraduhing tugma ang "$items.product" sa field name ng product reference sa Order schema mo
+    const topProducts = await Order.aggregate([
+      { $match: { status: "delivered", isArchived: false } },
+      { $unwind: "$items" },
+      {
+        $group: {
+          _id: "$items.product",
+          totalQuantitySold: { $sum: "$items.quantity" },
+          totalSales: { $sum: { $multiply: ["$items.quantity", "$items.price"] } }
+        }
+      },
+      { $sort: { totalQuantitySold: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "productDetails"
+        }
+      },
+      { $unwind: { path: "$productDetails", preserveNullAndEmptyArrays: true } }
+    ]);
+
+    // 4. Monthly Sales Trend (Sales Analysis for Line Chart)
+    const monthlySales = await Order.aggregate([
+      { $match: { status: "delivered", isArchived: false } },
+      {
+        $group: {
+          _id: { 
+            year: { $year: "$createdAt" }, 
+            month: { $month: "$createdAt" } 
+          },
+          revenue: { $sum: "$totalAmount" },
+          orderCount: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+      { $limit: 6 }
+    ]);
+
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
     // Recent orders
     const recentOrders = await Order.find({ isArchived: false })
       .populate("userId", "firstName lastName email")
@@ -56,11 +128,21 @@ router.get("/dashboard", async (req, res) => {
         totalOrders,
         pendingOrders,
         totalRevenue,
+<<<<<<< HEAD
+=======
+        avgOrderValue,
+        fulfillmentRate,
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
         totalCustomers,
         availableProducts,
         outOfStockProducts,
         orderBreakdown,
       },
+<<<<<<< HEAD
+=======
+      topProducts,
+      monthlySales,
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
       recentOrders,
     });
   } catch (err) {
@@ -68,7 +150,11 @@ router.get("/dashboard", async (req, res) => {
     req.session.error = "Failed to load dashboard.";
     res.redirect("/");
   }
+<<<<<<< HEAD
 });
+=======
+}); 
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
 
 // ==================== ORDERS ====================
 router.get("/orders", async (req, res) => {

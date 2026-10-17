@@ -1,9 +1,17 @@
 <% layout('layouts/main') %>
 
+<<<<<<< HEAD
 <h1 class="text-3xl font-bold text-dark mb-6"><i class="fas fa-chart-line text-primary mr-2"></i>Admin Dashboard</h1>
 
 <!-- Stats Cards -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+=======
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<h1 class="text-3xl font-bold text-dark mb-6"><i class="fas fa-chart-line text-primary mr-2"></i>Admin Dashboard</h1>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
   <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-primary">
     <div class="flex items-center justify-between">
       <div>
@@ -53,6 +61,57 @@
   </div>
 </div>
 
+<<<<<<< HEAD
+=======
+<!-- Performance Monitoring Row (AOV & Fulfillment Rate) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+  <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500 flex items-center justify-between">
+    <div>
+      <p class="text-gray-500 text-sm">Average Order Value (AOV)</p>
+      <h2 class="text-2xl font-bold text-dark">&#8369;<%= typeof stats !== 'undefined' && stats.avgOrderValue ? stats.avgOrderValue.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00' %></h2>
+    </div>
+    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+      <i class="fas fa-calculator text-blue-500 text-xl"></i>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500 flex items-center justify-between">
+    <div>
+      <p class="text-gray-500 text-sm">Fulfillment Rate</p>
+      <h2 class="text-2xl font-bold text-dark"><%= typeof stats !== 'undefined' ? stats.fulfillmentRate : 0 %>%</h2>
+    </div>
+    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+      <i class="fas fa-truck-fast text-purple-500 text-xl"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden Data Containers for Chart.js -->
+<div id="analyticsData" 
+     data-monthly='<%- JSON.stringify(typeof monthlySales !== "undefined" ? monthlySales : []) %>' 
+     data-topproducts='<%- JSON.stringify(typeof topProducts !== "undefined" ? topProducts : []) %>'>
+</div>
+
+<!-- Analytics Charts Row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+  <!-- Monthly Sales Line Chart -->
+  <div class="bg-white rounded-xl shadow-md p-6 lg:col-span-2">
+    <h2 class="text-lg font-bold text-dark mb-4"><i class="fas fa-chart-area text-primary mr-2"></i>Monthly Sales Trend</h2>
+    <div class="relative h-72">
+      <canvas id="monthlySalesChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Top Products Bar Chart -->
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <h2 class="text-lg font-bold text-dark mb-4"><i class="fas fa-star text-primary mr-2"></i>Top 5 Products</h2>
+    <div class="relative h-72">
+      <canvas id="topProductsChart"></canvas>
+    </div>
+  </div>
+</div>
+
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
 <!-- Recent Orders -->
 <div class="bg-white rounded-xl shadow-md p-6 mb-6">
   <div class="flex items-center justify-between mb-4">
@@ -149,3 +208,76 @@
     </div>
   </div>
 </div>
+<<<<<<< HEAD
+=======
+
+<!-- Pure Clean JS Script without EJS Tag Syntax inside <script> -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const dataElement = document.getElementById("analyticsData");
+    const monthlyData = JSON.parse(dataElement.getAttribute("data-monthly") || "[]");
+    const topProductsData = JSON.parse(dataElement.getAttribute("data-topproducts") || "[]");
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    // 1. Monthly Sales Line Chart
+    const salesLabels = monthlyData.map(function(d) {
+      return monthNames[d._id.month - 1] + " " + d._id.year;
+    });
+    const salesRevenue = monthlyData.map(function(d) {
+      return d.revenue;
+    });
+
+    const ctxSales = document.getElementById("monthlySalesChart").getContext("2d");
+    new Chart(ctxSales, {
+      type: "line",
+      data: {
+        labels: salesLabels.length > 0 ? salesLabels : ["No Data"],
+        datasets: [{
+          label: "Revenue (₱)",
+          data: salesRevenue.length > 0 ? salesRevenue : [0],
+          borderColor: "#4e73df",
+          backgroundColor: "rgba(78, 115, 223, 0.08)",
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+
+    // 2. Top Products Bar Chart
+    const productLabels = topProductsData.map(function(p) {
+      return p.productDetails ? p.productDetails.name : "Product";
+    });
+    const productQuantities = topProductsData.map(function(p) {
+      return p.totalQuantitySold;
+    });
+
+    const ctxProducts = document.getElementById("topProductsChart").getContext("2d");
+    new Chart(ctxProducts, {
+      type: "bar",
+      data: {
+        labels: productLabels.length > 0 ? productLabels : ["No Sales Yet"],
+        datasets: [{
+          label: "Units Sold",
+          data: productQuantities.length > 0 ? productQuantities : [0],
+          backgroundColor: "#1cc88a"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  });
+</script>
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)

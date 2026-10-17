@@ -7,8 +7,11 @@ const session = require('express-session');
 const MongoDBStore = require('connect-mongodb-session')(session);
 const engine = require('ejs-mate');
 const cloudinary = require('cloudinary').v2;
+<<<<<<< HEAD
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
+=======
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
 const flash = require('connect-flash');
 const helmet = require('helmet');
 
@@ -80,9 +83,13 @@ app.use(
         "https://ka-f.fontawesome.com",
         "https://cdn.sheetjs.com",
       ],
+<<<<<<< HEAD
       // 1. DAGDAG ITO: Para payagan ang onchange, onclick, atbp.
       scriptSrcAttr: ["'unsafe-inline'"], 
       
+=======
+      scriptSrcAttr: ["'unsafe-inline'"], 
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
       styleSrc: [
         "'self'",
         "'unsafe-inline'",
@@ -103,7 +110,11 @@ app.use(
       imgSrc: [
         "'self'",
         "data:",
+<<<<<<< HEAD
         "blob:", // 2. DAGDAG ITO: Para sa local image preview bago i-upload
+=======
+        "blob:",
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
         "https://res.cloudinary.com",
       ],
       connectSrc: [
@@ -111,7 +122,11 @@ app.use(
         "https://ka-f.fontawesome.com",
         "https://cdn.jsdelivr.net",
         "https://cdn.tailwindcss.com",
+<<<<<<< HEAD
         "https://res.cloudinary.com", // 3. DAGDAG ITO: Para sa connection sa Cloudinary
+=======
+        "https://res.cloudinary.com",
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
       ],
       objectSrc: ["'none'"],
       frameSrc: ["'self'"],
@@ -129,11 +144,17 @@ app.use((req, res, next) => {
 
 // ==================== GLOBAL VARIABLES (res.locals) ====================
 app.use((req, res, next) => {
+<<<<<<< HEAD
   // Flash messages from connect-flash
   res.locals.messageSuccess = req.flash('messageSuccess');
   res.locals.messagePass = req.flash('messagePass');
 
   // Session-based flash messages
+=======
+  res.locals.messageSuccess = req.flash('messageSuccess');
+  res.locals.messagePass = req.flash('messagePass');
+
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
   res.locals.back = '';
   res.locals.active = '';
   res.locals.error = req.session.error || null;
@@ -142,10 +163,15 @@ app.use((req, res, next) => {
   res.locals.success = req.session.success || null;
   res.locals.denied = req.session.denied || null;
 
+<<<<<<< HEAD
   // User data
   res.locals.user = req.session.user || null;
 
   // Clear session messages after reading (flash-like behavior)
+=======
+  res.locals.user = req.session.user || null;
+
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
   req.session.error = null;
   req.session.message = null;
   req.session.warning = null;
@@ -155,13 +181,18 @@ app.use((req, res, next) => {
   next();
 });
 
+<<<<<<< HEAD
 // ==================== CLOUDINARY ====================
+=======
+// ==================== CLOUDINARY CONFIG ====================
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+<<<<<<< HEAD
 const cloudStorage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => ({
@@ -222,6 +253,13 @@ app.use('/customer', customerRoutes);
 app.use('/admin', adminRoutes);
 
 // Landing page
+=======
+// ==================== ROUTES ====================
+app.use('/auth', authRoutes);
+app.use('/customer', customerRoutes);
+app.use('/admin', adminRoutes);
+
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
 app.get('/', (req, res) => {
   if (req.session.user) {
     return res.redirect(req.session.user.role === 'admin' ? '/admin/dashboard' : '/customer/shop');
@@ -229,12 +267,16 @@ app.get('/', (req, res) => {
   res.render('index', { title: 'Welcome' });
 });
 
+<<<<<<< HEAD
 // Home page
+=======
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
 app.get('/h', (req, res) => {
   res.render('home', { title: 'Home' });
 });
 
 // ==================== ERROR HANDLING ====================
+<<<<<<< HEAD
 // 404 - Page not found
 app.use((req, res) => {
   res.status(404);
@@ -244,6 +286,14 @@ app.use((req, res) => {
 });
 
 // 500 - Server error
+=======
+app.use((req, res) => {
+  res.status(404);
+  res.locals.error = 'Oops! Page cannot be found!';
+  res.render('index', { title: 'Page Not Found' });
+});
+
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
 app.use((err, req, res, next) => {
   console.error('⚠️ Error occurred:', err.message);
   res.locals.error = 'Oh no! Something went wrong!';
@@ -257,4 +307,8 @@ app.use((err, req, res, next) => {
 // ==================== START SERVER ====================
 app.listen(PORT, () => {
   console.log(`🚀 KDY's Arts & Crafts running at http://localhost:${PORT}`);
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
