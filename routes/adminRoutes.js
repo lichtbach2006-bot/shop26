@@ -19,34 +19,17 @@ const isAdmin = require("../middleware/isAdmin");
 // All admin routes require login + admin role
 router.use(isLoggedIn, isAdmin);
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
 // ==================== DASHBOARD ====================
 router.get("/dashboard", async (req, res) => {
   try {
     const totalOrders = await Order.countDocuments({ isArchived: false });
     const pendingOrders = await Order.countDocuments({ status: "pending", isArchived: false });
-<<<<<<< HEAD
-=======
     const deliveredOrdersCount = await Order.countDocuments({ status: "delivered", isArchived: false });
->>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
     const totalCustomers = await User.countDocuments({ role: "customer", isArchived: false });
     const availableProducts = await Product.countDocuments({ status: "available", isArchived: false });
     const outOfStockProducts = await Product.countDocuments({ status: "out_of_stock", isArchived: false });
 
-<<<<<<< HEAD
-    // Total revenue from delivered orders
-    const revenueResult = await Order.aggregate([
-      { $match: { status: "delivered", isArchived: false } },
-      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
-    ]);
-    const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
-
-    // Order breakdown by status
-=======
-    // 1. Sales & Performance Monitoring (Revenue, AOV, Fulfillment Rate)
+    // 1. Sales & Performance Monitoring
     const revenueResult = await Order.aggregate([
       { $match: { status: "delivered", isArchived: false } },
       { 
@@ -61,8 +44,7 @@ router.get("/dashboard", async (req, res) => {
     const avgOrderValue = revenueResult.length > 0 ? revenueResult[0].avgOrderValue : 0;
     const fulfillmentRate = totalOrders > 0 ? ((deliveredOrdersCount / totalOrders) * 100).toFixed(1) : 0;
 
-    // 2. Order Breakdown by Status (Order Analysis)
->>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
+    // 2. Order Breakdown by Status
     const breakdownResult = await Order.aggregate([
       { $match: { isArchived: false } },
       { $group: { _id: "$status", count: { $sum: 1 } } },
@@ -70,10 +52,7 @@ router.get("/dashboard", async (req, res) => {
     const orderBreakdown = {};
     breakdownResult.forEach((item) => (orderBreakdown[item._id] = item.count));
 
-<<<<<<< HEAD
-=======
-    // 3. Top 5 Best-Selling Products (Product Analysis)
-    // Note: Siguraduhing tugma ang "$items.product" sa field name ng product reference sa Order schema mo
+    // 3. Top 5 Best-Selling Products
     const topProducts = await Order.aggregate([
       { $match: { status: "delivered", isArchived: false } },
       { $unwind: "$items" },
@@ -81,13 +60,11 @@ router.get("/dashboard", async (req, res) => {
         $group: {
           _id: "$items.product",
           totalQuantitySold: { $sum: "$items.quantity" },
-          totalSales: { $sum: { $multiply: ["$items.quantity", "$items.price"] } }
+          totalSales: { $sum: {$multiply: ["$items.quantity", "$items.price"] } }
         }
       },
       { $sort: { totalQuantitySold: -1 } },
-      { $limit: 5 },
-      {
-        $lookup: {
+      { $limit: 5 }, {$lookup: {
           from: "products",
           localField: "_id",
           foreignField: "_id",
@@ -97,7 +74,7 @@ router.get("/dashboard", async (req, res) => {
       { $unwind: { path: "$productDetails", preserveNullAndEmptyArrays: true } }
     ]);
 
-    // 4. Monthly Sales Trend (Sales Analysis for Line Chart)
+    // 4. Monthly Sales Trend
     const monthlySales = await Order.aggregate([
       { $match: { status: "delivered", isArchived: false } },
       {
@@ -107,14 +84,10 @@ router.get("/dashboard", async (req, res) => {
             month: { $month: "$createdAt" } 
           },
           revenue: { $sum: "$totalAmount" },
-          orderCount: { $sum: 1 }
-        }
-      },
-      { $sort: { "_id.year": 1, "_id.month": 1 } },
+          orderCount: { $sum: 1 } } }, {$sort: { "_id.year": 1, "_id.month": 1 } },
       { $limit: 6 }
     ]);
 
->>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
     // Recent orders
     const recentOrders = await Order.find({ isArchived: false })
       .populate("userId", "firstName lastName email")
@@ -128,21 +101,15 @@ router.get("/dashboard", async (req, res) => {
         totalOrders,
         pendingOrders,
         totalRevenue,
-<<<<<<< HEAD
-=======
         avgOrderValue,
         fulfillmentRate,
->>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
         totalCustomers,
         availableProducts,
         outOfStockProducts,
         orderBreakdown,
       },
-<<<<<<< HEAD
-=======
       topProducts,
       monthlySales,
->>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
       recentOrders,
     });
   } catch (err) {
@@ -150,11 +117,7 @@ router.get("/dashboard", async (req, res) => {
     req.session.error = "Failed to load dashboard.";
     res.redirect("/");
   }
-<<<<<<< HEAD
 });
-=======
-}); 
->>>>>>> 0292498 (Update admin dashboard analytics and fix app.js routing)
 
 // ==================== ORDERS ====================
 router.get("/orders", async (req, res) => {
@@ -163,7 +126,7 @@ router.get("/orders", async (req, res) => {
     const filter = { isArchived: false };
 
     if (status) filter.status = status;
-    if (search) filter.orderNumber = { $regex: search, $options: "i" };
+    if (search) filter.orderNumber = { $regex: search,$options: "i" };
 
     const orders = await Order.find(filter)
       .populate("userId", "firstName lastName email")
@@ -223,7 +186,6 @@ router.post("/orders/:orderId/status", async (req, res) => {
       { new: true }
     );
 
-    // Notify customer
     if (order) {
       await Notification.create({
         userId: order.userId,
@@ -252,7 +214,6 @@ router.post("/orders/:orderId/shipping", async (req, res) => {
       estimatedDelivery,
     });
 
-    // Update order status to shipped
     const order = await Order.findByIdAndUpdate(req.params.orderId, { status: "shipped" }, { new: true });
 
     if (order) {
@@ -281,7 +242,6 @@ router.post("/orders/:orderId/shipping/:shippingId/update", async (req, res) => 
 
     if (shippingStatus === "delivered") {
       updateData.deliveredAt = new Date();
-      // Also update the order status
       const order = await Order.findByIdAndUpdate(req.params.orderId, { status: "delivered" }, { new: true });
       if (order) {
         await Notification.create({
@@ -311,7 +271,7 @@ router.get("/products", async (req, res) => {
     const filter = { isArchived: false };
 
     if (category) filter.category = category;
-    if (search) filter.name = { $regex: search, $options: "i" };
+    if (search) filter.name = { $regex: search,$options: "i" };
 
     const products = await Product.find(filter).sort({ createdAt: -1 });
 
@@ -329,12 +289,10 @@ router.get("/products", async (req, res) => {
   }
 });
 
-// GET - Add product form
 router.get("/products/add", (req, res) => {
   res.render("admin/productForm", { title: "Add Product", active: "products", product: null });
 });
 
-// POST - Create product
 router.post("/products/add", async (req, res) => {
   try {
     const { name, category, description, basePrice, stock, sizes, colors } = req.body;
@@ -365,7 +323,6 @@ router.post("/products/add", async (req, res) => {
   }
 });
 
-// GET - Edit product form
 router.get("/products/:productId/edit", async (req, res) => {
   try {
     const product = await Product.findOne({ _id: req.params.productId, isArchived: false });
@@ -381,7 +338,6 @@ router.get("/products/:productId/edit", async (req, res) => {
   }
 });
 
-// POST - Update product
 router.post("/products/:productId/update", async (req, res) => {
   try {
     const { name, category, description, basePrice, stock, sizes, colors } = req.body;
@@ -397,7 +353,6 @@ router.post("/products/:productId/update", async (req, res) => {
       status: parseInt(stock) > 0 ? "available" : "out_of_stock",
     };
 
-    // Update image if new one uploaded
     if (req.files && req.files.length > 0) {
       updateData.imageUrl = req.files[0].path;
     }
@@ -413,7 +368,6 @@ router.post("/products/:productId/update", async (req, res) => {
   }
 });
 
-// POST - Archive product
 router.post("/products/:productId/archive", async (req, res) => {
   try {
     await Product.findByIdAndUpdate(req.params.productId, { isArchived: true });
@@ -435,9 +389,9 @@ router.get("/customers", async (req, res) => {
     if (status) filter.status = status;
     if (search) {
       filter.$or = [
-        { firstName: { $regex: search, $options: "i" } },
-        { lastName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
+        { firstName: { $regex: search,$options: "i" } },
+        { lastName: { $regex: search,$options: "i" } },
+        { email: { $regex: search,$options: "i" } },
       ];
     }
 
@@ -457,37 +411,6 @@ router.get("/customers", async (req, res) => {
   }
 });
 
-// GET - Customer detail
-router.get("/customers/:userId", async (req, res) => {
-  try {
-    const customer = await User.findOne({
-      _id: req.params.userId,
-      role: "customer",
-      isArchived: false,
-    }).select("-password");
-
-    if (!customer) {
-      req.session.error = "Customer not found.";
-      return res.redirect("/admin/customers");
-    }
-
-    const orders = await Order.find({ userId: customer._id, isArchived: false }).sort({ createdAt: -1 });
-
-    res.render("admin/customers", {
-      title: `${customer.firstName} ${customer.lastName}`,
-      active: "customers",
-      customers: [customer],
-      search: "",
-      statusFilter: "",
-    });
-  } catch (err) {
-    console.error("❌ Customer detail error:", err.message);
-    req.session.error = "Failed to load customer.";
-    res.redirect("/admin/customers");
-  }
-});
-
-// POST - Block customer
 router.post("/customers/:userId/block", async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.params.userId, { status: "blocked" });
@@ -500,7 +423,6 @@ router.post("/customers/:userId/block", async (req, res) => {
   }
 });
 
-// POST - Unblock customer
 router.post("/customers/:userId/unblock", async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.params.userId, { status: "active" });
@@ -525,7 +447,6 @@ router.get("/profile", async (req, res) => {
   }
 });
 
-// POST - Update admin profile
 router.post("/profile/update", async (req, res) => {
   try {
     const { firstName, lastName, phoneNumber } = req.body;
@@ -545,7 +466,6 @@ router.post("/profile/update", async (req, res) => {
   }
 });
 
-// POST - Update admin photo
 router.post("/profile/photo", async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
@@ -570,7 +490,6 @@ router.post("/profile/photo", async (req, res) => {
   }
 });
 
-// POST - Change admin password
 router.post("/profile/password", async (req, res) => {
   try {
     const { currentPassword, newPassword, confirmNewPassword } = req.body;
