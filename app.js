@@ -12,7 +12,7 @@ const multer = require('multer');
 const flash = require('connect-flash');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit'); 
-const mongoSanitize = require('express-mongo-sanitize'); // <--- Idagdag dito ang rate limit package
+
 
 // ==================== ROUTE IMPORTS ====================
 const authRoutes = require('./routes/authRoutes');
