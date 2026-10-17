@@ -11,7 +11,8 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 const flash = require('connect-flash');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit'); // <--- Idagdag dito ang rate limit package
+const rateLimit = require('express-rate-limit'); 
+const mongoSanitize = require('express-mongo-sanitize'); // <--- Idagdag dito ang rate limit package
 
 // ==================== ROUTE IMPORTS ====================
 const authRoutes = require('./routes/authRoutes');
@@ -46,6 +47,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(morgan('dev'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(mongoSanitize()); // <--- Ang dinagdag natin para sa NoSQL Injection
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '0',
   etag: true
