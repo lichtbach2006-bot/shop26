@@ -7,7 +7,7 @@
 <div class="flex items-center justify-center min-h-[85vh] py-8">
   <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg">
     <div class="text-center mb-6">
-      <i class="fas fa-user-plus text-primary text-4xl mb-2"></i>
+      <i class="fas fa-user-plus text-blue-600 text-4xl mb-2"></i>
       <h1 class="text-2xl font-bold text-dark">Create an Account</h1>
       <p class="text-gray-500 text-sm">Join KDY's Arts & Crafts community</p>
     </div>
@@ -18,12 +18,12 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
           <input type="text" name="firstName" required placeholder="Juan"
-            class="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none transition text-sm" />
+            class="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-sm" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
           <input type="text" name="lastName" required placeholder="Dela Cruz"
-            class="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none transition text-sm" />
+            class="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-sm" />
         </div>
       </div>
 
@@ -33,7 +33,7 @@
         <div class="relative">
           <i class="fas fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
           <input type="email" name="email" required placeholder="you@example.com"
-            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none transition text-sm" />
+            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-sm" />
         </div>
       </div>
 
@@ -43,20 +43,20 @@
         <div class="relative">
           <i class="fas fa-phone absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
           <input type="tel" name="phoneNumber" required placeholder="09123456789"
-            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none transition text-sm" />
+            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-sm" />
         </div>
       </div>
 
       <!-- ================= SHOPEE-STYLE MAP ADDRESS PICKER ================= -->
       <div class="space-y-2 bg-gray-50 p-4 rounded-xl border border-gray-200">
         <label class="block text-sm font-semibold text-dark flex items-center justify-between">
-          <span><i class="fas fa-map-marker-alt text-primary mr-1.5"></i> Delivery Address</span>
+          <span><i class="fas fa-map-marker-alt text-blue-600 mr-1.5"></i> Delivery Address</span>
           <span class="text-xs text-gray-500 font-normal">(Drag pin or use GPS)</span>
         </label>
 
-        <!-- Detect Location Button (Primary Theme Color #6D28D9) -->
+        <!-- Detect Location Button (Blue Theme) -->
         <button type="button" onclick="detectLocation()" 
-          class="w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition text-xs shadow-sm">
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition text-xs shadow-sm">
           <i class="fas fa-crosshairs"></i> Use Current Location (Detect GPS)
         </button>
 
@@ -66,7 +66,7 @@
         <!-- Selected Address Textarea -->
         <textarea id="fullAddress" name="address" required rows="2" 
           placeholder="Drag pin on map or type exact address (House/Unit No., Street, Brgy., City)..." 
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none transition text-xs bg-white font-medium"></textarea>
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-xs bg-white font-medium"></textarea>
 
         <!-- Hidden coordinates fields -->
         <input type="hidden" id="latitude" name="latitude">
@@ -78,23 +78,23 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
           <input type="password" name="password" required placeholder="••••••••" minlength="8"
-            class="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none transition text-sm" />
+            class="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-sm" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
           <input type="password" name="confirmPassword" required placeholder="••••••••" minlength="8"
-            class="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none transition text-sm" />
+            class="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-sm" />
         </div>
       </div>
 
-      <!-- Submit Button (Primary Theme Color) -->
-      <button type="submit" class="w-full bg-primary hover:bg-opacity-90 text-white font-semibold py-2.5 rounded-lg transition shadow">
+      <!-- Submit Button (Blue Theme) -->
+      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition shadow">
         <i class="fas fa-user-check mr-2"></i> Register Account
       </button>
     </form>
 
     <p class="text-center text-sm text-gray-500 mt-6">
-      Already have an account? <a href="/auth/login" class="text-primary hover:underline font-semibold">Login here</a>
+      Already have an account? <a href="/auth/login" class="text-blue-600 hover:underline font-semibold">Login here</a>
     </p>
   </div>
 </div>
