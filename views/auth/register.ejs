@@ -1,8 +1,8 @@
 <% layout('layouts/main') %>
 
-<!-- Include Leaflet CSS & JS for Map Picker -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<!-- Include Leaflet CSS & JS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 
 <div class="flex items-center justify-center min-h-[85vh] py-8">
   <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg">
@@ -107,15 +107,17 @@
 <script>
   let map, marker;
 
-  // Default coordinates: Central Luzon / Nueva Ecija
   const defaultLat = 15.4828;
   const defaultLng = 120.9702;
 
-  function initMap() {
-    if (typeof L === 'undefined') {
-      setTimeout(initMap, 200);
-      return;
-    }
+  document.addEventListener('DOMContentLoaded', function() {
+    // Fix leafet marker icon missing image issue
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png'
+    });
 
     map = L.map('addressMap').setView([defaultLat, defaultLng], 13);
 
@@ -126,10 +128,7 @@
 
     marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
 
-    // Ensure map tiles load properly
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 300);
+    setTimeout(() => { map.invalidateSize(); }, 300);
 
     marker.on('dragend', function() {
       const pos = marker.getLatLng();
@@ -150,9 +149,7 @@
         }
       });
     }
-  }
-
-  document.addEventListener('DOMContentLoaded', initMap);
+  });
 
   // Reverse Geocoding
   async function updateAddressFromCoords(lat, lng) {
@@ -160,9 +157,9 @@
     document.getElementById('longitude').value = lng;
 
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&email=kdycrafts@example.com`;
-      const response = await fetch(url);
-      const data = await response.json();
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=en`);
+      if (!res.ok) return;
+      const data = await res.json();
       if (data && data.display_name) {
         document.getElementById('fullAddress').value = data.display_name;
       }
@@ -171,7 +168,7 @@
     }
   }
 
-  // Search Address
+  // Search Address with fallback
   async function searchAddress() {
     const query = document.getElementById('searchInput').value.trim();
     if (!query) {
@@ -180,9 +177,13 @@
     }
 
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&email=kdycrafts@example.com`;
-      const response = await fetch(url);
-      const results = await response.json();
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=en`);
+      
+      if (!res.ok) {
+        throw new Error("HTTP error " + res.status);
+      }
+
+      const results = await res.json();
 
       if (results && results.length > 0) {
         const lat = parseFloat(results[0].lat);
@@ -196,7 +197,7 @@
       }
     } catch (err) {
       console.error("Search failed:", err);
-      alert("An error occurred while searching for the address. Please try again.");
+      alert("Address search failed. Please drag the pin on the map directly.");
     }
   }
 </script>
