@@ -217,7 +217,7 @@ router.post("/orders/:orderId/status", async (req, res) => {
 router.post("/orders/:orderId/shipping", async (req, res) => {
   try {
     const { estimatedDelivery } = req.body;
-    const initialShippingStatus = "shipped";
+    const initialShippingStatus = "preparing";
 
     await Shipping.create({
       orderId: req.params.orderId,
