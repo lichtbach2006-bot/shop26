@@ -11,9 +11,10 @@
     <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none">
       <option value="">All Status</option>
       <option value="pending" <%= typeof statusFilter !== 'undefined' && statusFilter === 'pending' ? 'selected' : '' %>>Pending</option>
+      <option value="preparing" <%= typeof statusFilter !== 'undefined' && statusFilter === 'preparing' ? 'selected' : '' %>>Preparing</option>
       <option value="processing" <%= typeof statusFilter !== 'undefined' && statusFilter === 'processing' ? 'selected' : '' %>>Processing</option>
-      <option value="ready" <%= typeof statusFilter !== 'undefined' && statusFilter === 'ready' ? 'selected' : '' %>>Ready</option>
       <option value="shipped" <%= typeof statusFilter !== 'undefined' && statusFilter === 'shipped' ? 'selected' : '' %>>Shipped</option>
+      <option value="in_transit" <%= typeof statusFilter !== 'undefined' && statusFilter === 'in_transit' ? 'selected' : '' %>>In Transit</option>
       <option value="delivered" <%= typeof statusFilter !== 'undefined' && statusFilter === 'delivered' ? 'selected' : '' %>>Delivered</option>
       <option value="cancelled" <%= typeof statusFilter !== 'undefined' && statusFilter === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
     </select>
@@ -37,13 +38,13 @@
       <tbody>
         <% orders.forEach(order => { %>
           <%
+            let currentStatus = (order.status || '').toLowerCase();
             let osc = 'gray';
-            if (order.status === 'pending') osc = 'yellow';
-            else if (order.status === 'processing') osc = 'blue';
-            else if (order.status === 'ready') osc = 'purple';
-            else if (order.status === 'shipped') osc = 'indigo';
-            else if (order.status === 'delivered') osc = 'green';
-            else if (order.status === 'cancelled') osc = 'red';
+            if (currentStatus === 'pending') osc = 'yellow';
+            else if (currentStatus === 'preparing' || currentStatus === 'processing') osc = 'blue';
+            else if (currentStatus === 'shipped' || currentStatus === 'in_transit') osc = 'indigo';
+            else if (currentStatus === 'delivered') osc = 'green';
+            else if (currentStatus === 'cancelled') osc = 'red';
           %>
           <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
             <td class="px-6 py-4 font-bold">#<%= order.orderNumber %></td>
@@ -57,7 +58,9 @@
             </td>
             <td class="px-6 py-4 font-bold text-primary">&#8369;<%= order.totalAmount.toFixed(2) %></td>
             <td class="px-6 py-4">
-              <span class="px-3 py-1 rounded-full text-xs font-semibold bg-<%= osc %>-100 text-<%= osc %>-700 capitalize"><%= order.status %></span>
+              <span class="px-3 py-1 rounded-full text-xs font-semibold bg-<%= osc %>-100 text-<%= osc %>-700 capitalize">
+                <%= currentStatus.replace('_', ' ') %>
+              </span>
             </td>
             <td class="px-6 py-4 text-gray-500"><%= new Date(order.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
             <td class="px-6 py-4">
