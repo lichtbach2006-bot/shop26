@@ -148,56 +148,68 @@
     }
   }
 
-  // Detect GPS Location of User
-  function detectLocation() {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser.");
-      return;
+  // Detect GPS Location with IP Fallback (No infinite loading)
+  async function detectLocation() {
+    const btn = document.querySelector("button[onclick='detectLocation()']");
+    const originalText = btn ? btn.innerHTML : '<i class="fas fa-crosshairs"></i> Use Current Location (Detect GPS)';
+    
+    if (btn) {
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Detecting Location...';
+      btn.disabled = true;
     }
 
-    // Notification sa user na hinahanap ang lokasyon
-    const btn = document.querySelector("button[onclick='detectLocation()']");
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Detecting GPS...';
-    btn.disabled = true;
+    let gpsSuccess = false;
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
+    if (navigator.geolocation) {
+      await new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          resolve(false);
+        }, 4000); // 4 seconds limit para sa GPS
 
-        map.setView([lat, lng], 16);
-        marker.setLatLng([lat, lng]);
-        updateAddressFromCoords(lat, lng);
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            clearTimeout(timer);
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            map.setView([lat, lng], 16);
+            marker.setLatLng([lat, lng]);
+            updateAddressFromCoords(lat, lng);
+            gpsSuccess = true;
+            resolve(true);
+          },
+          (error) => {
+            clearTimeout(timer);
+            resolve(false);
+          },
+          { enableHighAccuracy: false, timeout: 3500, maximumAge: Infinity }
+        );
+      });
+    }
 
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-      },
-      (error) => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+    // Kung nag-fail o nag-timeout ang GPS (hal. nasa PC/Laptop), gamitin ang IP Geolocation
+    if (!gpsSuccess) {
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
         
-        console.error("Geolocation error code:", error.code, error.message);
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            alert("Location permission was denied. Please enable location access in your browser settings.");
-            break;
-          case error.POSITION_UNAVAILABLE:
-            alert("Location information is unavailable. Please check your GPS or internet connection.");
-            break;
-          case error.TIMEOUT:
-            alert("Location request timed out. Please try again.");
-            break;
-          default:
-            alert("An unknown error occurred while retrieving location.");
-            break;
+        if (data && data.latitude && data.longitude) {
+          const lat = data.latitude;
+          const lng = data.longitude;
+          
+          map.setView([lat, lng], 14);
+          marker.setLatLng([lat, lng]);
+          updateAddressFromCoords(lat, lng);
+        } else {
+          alert("Hindi ma-detect ang eksaktong lokasyon. Paki-drag na lang po ang pin sa mapa manu-mano.");
         }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0
+      } catch (err) {
+        console.error("IP Geolocation failed:", err);
+        alert("Paki-drag na lang po ang pin sa mapa para sa iyong delivery address.");
       }
-    );
+    }
+
+    if (btn) {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
   }
-</script>
