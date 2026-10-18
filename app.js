@@ -13,7 +13,6 @@ const flash = require('connect-flash');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit'); 
 
-
 // ==================== ROUTE IMPORTS ====================
 const authRoutes = require('./routes/authRoutes');
 const customerRoutes = require('./routes/customerRoutes');
@@ -54,18 +53,17 @@ app.use(express.static(path.join(__dirname, 'public'), {
 
 // ==================== RATE LIMITING (Security) ====================
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minuto
-  max: 300, // Hanggang 300 requests bawat 15 minuto bawat IP
+  windowMs: 15 * 60 * 1000,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: "Too many requests from this IP, please try again after 15 minutes."
 });
 app.use(globalLimiter);
 
-// Mas mahigpit na limit para sa Login / Auth (Brute-force protection)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10, // Hanggang 10 login attempts lang bawat 15 minuto
+  max: 10,
   message: "Too many login attempts from this IP, please try again later."
 });
 app.use('/auth/login', authLimiter);
@@ -77,7 +75,7 @@ app.use(session({
   saveUninitialized: false,
   store: store,
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24 // 1 day
+    maxAge: 1000 * 60 * 60 * 24
   }
 }));
 
@@ -191,7 +189,7 @@ const cloudStorage = new CloudinaryStorage({
 
 const upload = multer({
   storage: cloudStorage,
-  limits: { fileSize: 524288000 }, // 500MB
+  limits: { fileSize: 524288000 },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith("image/")) {
       return cb(new Error("Only image files are allowed!"));
@@ -216,6 +214,39 @@ app.use((req, res, next) => {
     }
     next();
   });
+});
+
+// ==================== API PROXY ROUTES FOR MAP ====================
+app.get('/api/search-address', async (req, res) => {
+  const query = req.query.q;
+  if (!query) return res.status(400).json([]);
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+      { headers: { 'User-Agent': 'KDYArtsAndCrafts/1.0 (kdycrafts@gmail.com)' } }
+    );
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error("Backend search error:", error);
+    res.status(500).json({ error: "Failed to fetch location data" });
+  }
+});
+
+app.get('/api/reverse-address', async (req, res) => {
+  const { lat, lon } = req.query;
+  if (!lat || !lon) return res.status(400).json({ error: "Missing coordinates" });
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+      { headers: { 'User-Agent': 'KDYArtsAndCrafts/1.0 (kdycrafts@gmail.com)' } }
+    );
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error("Backend reverse lookup error:", error);
+    res.status(500).json({ error: "Failed to fetch address" });
+  }
 });
 
 // ==================== ROUTES ====================

@@ -65,7 +65,7 @@
         </div>
 
         <!-- Map Container -->
-        <div id="addressMap" style="height: 220px; width: 100%;" class="rounded-lg border border-gray-300 z-10 shadow-inner"></div>
+        <div id="addressMap" style="height: 220px; width: 100%; min-height: 220px;" class="rounded-lg border border-gray-300 z-10 shadow-inner"></div>
 
         <!-- Selected Address Textarea -->
         <textarea id="fullAddress" name="address" required rows="2" 
@@ -111,7 +111,6 @@
   const defaultLng = 120.9702;
 
   document.addEventListener('DOMContentLoaded', function() {
-    // Fix leafet marker icon missing image issue
     delete L.Icon.Default.prototype._getIconUrl;
     L.Icon.Default.mergeOptions({
       iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -128,7 +127,7 @@
 
     marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
 
-    setTimeout(() => { map.invalidateSize(); }, 300);
+    setTimeout(() => { map.invalidateSize(); }, 400);
 
     marker.on('dragend', function() {
       const pos = marker.getLatLng();
@@ -151,24 +150,21 @@
     }
   });
 
-  // Reverse Geocoding
   async function updateAddressFromCoords(lat, lng) {
     document.getElementById('latitude').value = lat;
     document.getElementById('longitude').value = lng;
 
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=en`);
-      if (!res.ok) return;
+      const res = await fetch(`/api/reverse-address?lat=${lat}&lon=${lng}`);
       const data = await res.json();
       if (data && data.display_name) {
         document.getElementById('fullAddress').value = data.display_name;
       }
     } catch (err) {
-      console.error("Geocoding failed:", err);
+      console.error("Reverse lookup error:", err);
     }
   }
 
-  // Search Address with fallback
   async function searchAddress() {
     const query = document.getElementById('searchInput').value.trim();
     if (!query) {
@@ -177,27 +173,25 @@
     }
 
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=en`);
-      
-      if (!res.ok) {
-        throw new Error("HTTP error " + res.status);
-      }
-
+      const res = await fetch(`/api/search-address?q=${encodeURIComponent(query)}`);
       const results = await res.json();
 
       if (results && results.length > 0) {
         const lat = parseFloat(results[0].lat);
         const lon = parseFloat(results[0].lon);
 
-        map.setView([lat, lon], 16);
+        map.setView([lat, lon], 17);
         marker.setLatLng([lat, lon]);
-        updateAddressFromCoords(lat, lon);
+        
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lon;
+        document.getElementById('fullAddress').value = results[0].display_name;
       } else {
-        alert("Location not found. Please try typing a more specific address or drag the pin manually on the map.");
+        alert("Location not found. Please try a more specific address or drag the pin manually.");
       }
     } catch (err) {
       console.error("Search failed:", err);
-      alert("Address search failed. Please drag the pin on the map directly.");
+      alert("Address search failed. Please drag the pin manually on the map.");
     }
   }
 </script>
