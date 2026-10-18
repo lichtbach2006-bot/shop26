@@ -123,6 +123,8 @@ app.use(
         "data:",
         "blob:",
         "https://res.cloudinary.com",
+        "https://*.openstreetmap.org",
+        "https://cdnjs.cloudflare.com",
       ],
       connectSrc: [
         "'self'",
@@ -130,6 +132,8 @@ app.use(
         "https://cdn.jsdelivr.net",
         "https://cdn.tailwindcss.com",
         "https://res.cloudinary.com",
+        "https://*.openstreetmap.org",
+        "https://nominatim.openstreetmap.org",
       ],
       objectSrc: ["'none'"],
       frameSrc: ["'self'"],
