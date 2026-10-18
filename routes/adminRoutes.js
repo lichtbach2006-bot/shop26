@@ -24,14 +24,14 @@ router.get("/dashboard", async (req, res) => {
   try {
     const totalOrders = await Order.countDocuments({ isArchived: false });
     const pendingOrders = await Order.countDocuments({ status: "pending", isArchived: false });
-    const deliveredOrdersCount = await Order.countDocuments({ status: "delivered", isArchived: false });
+    const deliveredOrdersCount = await Order.countDocuments({ status: { $in: ["delivered", "Delivered", "completed", "Completed"] }, isArchived: false });
     const totalCustomers = await User.countDocuments({ role: "customer", isArchived: false });
     const availableProducts = await Product.countDocuments({ status: "available", isArchived: false });
     const outOfStockProducts = await Product.countDocuments({ status: "out_of_stock", isArchived: false });
 
     // 1. Sales & Performance Monitoring
     const revenueResult = await Order.aggregate([
-      { $match: { status: "delivered", isArchived: false } },
+      { $match: { status: {$in: ["delivered", "Delivered", "completed", "Completed"] }, isArchived: false } },
       { 
         $group: { 
           _id: null, 
@@ -52,9 +52,14 @@ router.get("/dashboard", async (req, res) => {
     const orderBreakdown = {};
     breakdownResult.forEach((item) => (orderBreakdown[item._id] = item.count));
 
-    // 3. Top 5 Best-Selling Products
+    // 3. Top 5 Best-Selling Products (Sinusuportahan ang delivered, Delivered, at completed)
     const topProducts = await Order.aggregate([
-      { $match: { status: "delivered", isArchived: false } },
+      { 
+        $match: { 
+          status: { $in: ["delivered", "Delivered", "completed", "Completed"] }, 
+          isArchived: false 
+        } 
+      },
       { $unwind: "$items" },
       {
         $group: {
@@ -76,7 +81,7 @@ router.get("/dashboard", async (req, res) => {
 
     // 4. Monthly Sales Trend
     const monthlySales = await Order.aggregate([
-      { $match: { status: "delivered", isArchived: false } },
+      { $match: { status: {$in: ["delivered", "Delivered", "completed", "Completed"] }, isArchived: false } },
       {
         $group: {
           _id: { 
@@ -547,4 +552,4 @@ router.post("/profile/password", async (req, res) => {
   }
 });
 
-module.exports = router; 
+module.exports = router;
