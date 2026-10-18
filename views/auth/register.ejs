@@ -51,14 +51,18 @@
       <div class="space-y-2 bg-gray-50 p-4 rounded-xl border border-gray-200">
         <label class="block text-sm font-semibold text-dark flex items-center justify-between">
           <span><i class="fas fa-map-marker-alt text-blue-600 mr-1.5"></i> Delivery Address</span>
-          <span class="text-xs text-gray-500 font-normal">(Drag pin or use GPS)</span>
+          <span class="text-xs text-gray-500 font-normal">(Search place or drag pin)</span>
         </label>
 
-        <!-- Detect Location Button (Blue Theme) -->
-        <button type="button" onclick="detectLocation()" 
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition text-xs shadow-sm">
-          <i class="fas fa-crosshairs"></i> Use Current Location (Detect GPS)
-        </button>
+        <!-- Address Search Input Bar -->
+        <div class="flex gap-2">
+          <input type="text" id="searchInput" placeholder="Search street, barangay, or city (e.g., Cabanatuan)..." 
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-xs bg-white" />
+          <button type="button" onclick="searchAddress()" 
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition shadow-sm flex items-center justify-center">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
 
         <!-- Map Container -->
         <div id="addressMap" class="w-full h-52 rounded-lg border border-gray-300 z-10 shadow-inner"></div>
@@ -130,6 +134,17 @@
       marker.setLatLng(e.latlng);
       updateAddressFromCoords(e.latlng.lat, e.latlng.lng);
     });
+
+    // Allow Enter key to trigger search
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          searchAddress();
+        }
+      });
+    }
   });
 
   // Reverse Geocoding (Convert Lat/Lng to readable Address)
@@ -148,68 +163,31 @@
     }
   }
 
-  // Detect GPS Location with IP Fallback (No infinite loading)
-  async function detectLocation() {
-    const btn = document.querySelector("button[onclick='detectLocation()']");
-    const originalText = btn ? btn.innerHTML : '<i class="fas fa-crosshairs"></i> Use Current Location (Detect GPS)';
-    
-    if (btn) {
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Detecting Location...';
-      btn.disabled = true;
+  // Search Address using Nominatim Geocoding API
+  async function searchAddress() {
+    const query = document.getElementById('searchInput').value.trim();
+    if (!query) {
+      alert("Please enter an address to search.");
+      return;
     }
 
-    let gpsSuccess = false;
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+      const results = await response.json();
 
-    if (navigator.geolocation) {
-      await new Promise((resolve) => {
-        const timer = setTimeout(() => {
-          resolve(false);
-        }, 4000); // 4 seconds limit para sa GPS
+      if (results && results.length > 0) {
+        const lat = parseFloat(results[0].lat);
+        const lon = parseFloat(results[0].lon);
 
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            clearTimeout(timer);
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            map.setView([lat, lng], 16);
-            marker.setLatLng([lat, lng]);
-            updateAddressFromCoords(lat, lng);
-            gpsSuccess = true;
-            resolve(true);
-          },
-          (error) => {
-            clearTimeout(timer);
-            resolve(false);
-          },
-          { enableHighAccuracy: false, timeout: 3500, maximumAge: Infinity }
-        );
-      });
-    }
-
-    // Kung nag-fail o nag-timeout ang GPS (hal. nasa PC/Laptop), gamitin ang IP Geolocation
-    if (!gpsSuccess) {
-      try {
-        const response = await fetch('https://ipapi.co/json/');
-        const data = await response.json();
-        
-        if (data && data.latitude && data.longitude) {
-          const lat = data.latitude;
-          const lng = data.longitude;
-          
-          map.setView([lat, lng], 14);
-          marker.setLatLng([lat, lng]);
-          updateAddressFromCoords(lat, lng);
-        } else {
-          alert("Hindi ma-detect ang eksaktong lokasyon. Paki-drag na lang po ang pin sa mapa manu-mano.");
-        }
-      } catch (err) {
-        console.error("IP Geolocation failed:", err);
-        alert("Paki-drag na lang po ang pin sa mapa para sa iyong delivery address.");
+        map.setView([lat, lon], 16);
+        marker.setLatLng([lat, lon]);
+        updateAddressFromCoords(lat, lon);
+      } else {
+        alert("Location not found. Please try typing a more specific address or drag the pin manually on the map.");
       }
-    }
-
-    if (btn) {
-      btn.innerHTML = originalText;
-      btn.disabled = false;
+    } catch (err) {
+      console.error("Search failed:", err);
+      alert("An error occurred while searching for the address. Please try again.");
     }
   }
+</script>
