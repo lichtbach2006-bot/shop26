@@ -7,19 +7,40 @@ const crypto = require('crypto'); // Built-in sa Node.js
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // ==================== LOGIN ====================
-// GET - Show login page
+// GET - Show login page (with Math Captcha 1-100)
 router.get("/login", (req, res) => {
   if (req.session.user) {
     return res.redirect(req.session.user.role === "admin" ? "/admin/dashboard" : "/customer/shop");
   }
-  res.render("auth/login", { title: "Login" });
+
+  // Generate random math challenge (1 to 100)
+  const num1 = Math.floor(Math.random() * 100) + 1;
+  const num2 = Math.floor(Math.random() * 100) + 1;
+
+  // Save correct answer in session
+  req.session.captchaAnswer = num1 + num2;
+
+  res.render("auth/login", { 
+    title: "Login",
+    captchaQuestion: `${num1} + ${num2} = ?`
+  });
 });
 
-// POST - Process login
+// POST - Process login (with Captcha verification)
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, captchaInput } = req.body;
 
+    // 1. Verify Math Captcha first
+    if (!captchaInput || parseInt(captchaInput, 10) !== req.session.captchaAnswer) {
+      req.session.error = "Incorrect Security Check (Math Captcha). Please try again.";
+      return res.redirect("/auth/login");
+    }
+
+    // Reset captcha answer once validated
+    req.session.captchaAnswer = null;
+
+    // 2. User & Password Checks
     const user = await User.findOne({ email: email.toLowerCase(), isArchived: false });
 
     if (!user) {
@@ -130,8 +151,7 @@ router.post("/forgot-password", async (req, res) => {
         const user = await User.findOne({ email: email.toLowerCase(), isArchived: false });
 
         if (!user) {
-            // Para sa security, huwag sabihin kung ang email ay wala sa DB. 
-            // Sabihin na lang na "Check your email".
+            // Para sa security, huwag sabihin kung ang email ay wala sa DB.
             req.session.success = "If that email exists in our system, a temporary password has been sent.";
             return res.redirect("/auth/login");
         }
