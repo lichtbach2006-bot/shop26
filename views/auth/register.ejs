@@ -150,22 +150,54 @@
 
   // Detect GPS Location of User
   function detectLocation() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-
-          map.setView([lat, lng], 16);
-          marker.setLatLng([lat, lng]);
-          updateAddressFromCoords(lat, lng);
-        },
-        (error) => {
-          alert("Unable to access GPS location. Please allow location permission in your browser.");
-        }
-      );
-    } else {
+    if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser.");
+      return;
     }
+
+    // Notification sa user na hinahanap ang lokasyon
+    const btn = document.querySelector("button[onclick='detectLocation()']");
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Detecting GPS...';
+    btn.disabled = true;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        map.setView([lat, lng], 16);
+        marker.setLatLng([lat, lng]);
+        updateAddressFromCoords(lat, lng);
+
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      },
+      (error) => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        
+        console.error("Geolocation error code:", error.code, error.message);
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            alert("Location permission was denied. Please enable location access in your browser settings.");
+            break;
+          case error.POSITION_UNAVAILABLE:
+            alert("Location information is unavailable. Please check your GPS or internet connection.");
+            break;
+          case error.TIMEOUT:
+            alert("Location request timed out. Please try again.");
+            break;
+          default:
+            alert("An unknown error occurred while retrieving location.");
+            break;
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+      }
+    );
   }
 </script>
