@@ -1,13 +1,13 @@
 <% layout('layouts/main') %>
 
-<!-- Include Leaflet CSS & JS directly for Map Picker -->
+<!-- Include Leaflet CSS & JS for Map Picker -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <div class="flex items-center justify-center min-h-[85vh] py-8">
   <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg">
     <div class="text-center mb-6">
-      <i class="fas fa-user-plus text-black text-4xl mb-2"></i>
+      <i class="fas fa-user-plus text-primary text-4xl mb-2"></i>
       <h1 class="text-2xl font-bold text-dark">Create an Account</h1>
       <p class="text-gray-500 text-sm">Join KDY's Arts & Crafts community</p>
     </div>
@@ -49,15 +49,15 @@
 
       <!-- ================= SHOPEE-STYLE MAP ADDRESS PICKER ================= -->
       <div class="space-y-2 bg-gray-50 p-4 rounded-xl border border-gray-200">
-        <label class="block text-sm font-semibold text-gray-800 flex items-center justify-between">
-          <span><i class="fas fa-map-marker-alt text-emerald-600 mr-1.5"></i> Delivery Address</span>
+        <label class="block text-sm font-semibold text-dark flex items-center justify-between">
+          <span><i class="fas fa-map-marker-alt text-primary mr-1.5"></i> Delivery Address</span>
           <span class="text-xs text-gray-500 font-normal">(Drag pin or use GPS)</span>
         </label>
 
-        <!-- Detect Location Button -->
+        <!-- Detect Location Button (Primary Theme Color #6D28D9) -->
         <button type="button" onclick="detectLocation()" 
-          class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition text-xs shadow-sm">
-          <i class="fas fa-crosshairs"></i> Gamitin ang Lokasyon Ko (Detect GPS Location)
+          class="w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition text-xs shadow-sm">
+          <i class="fas fa-crosshairs"></i> Use Current Location (Detect GPS)
         </button>
 
         <!-- Map Container -->
@@ -65,10 +65,10 @@
 
         <!-- Selected Address Textarea -->
         <textarea id="fullAddress" name="address" required rows="2" 
-          placeholder="I-drag ang pin sa mapa o i-type dito ang eksaktong address (House/Unit No., Street, Brgy., City)..." 
+          placeholder="Drag pin on map or type exact address (House/Unit No., Street, Brgy., City)..." 
           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none transition text-xs bg-white font-medium"></textarea>
 
-        <!-- Hidden coordinates fields for backend storage/verification -->
+        <!-- Hidden coordinates fields -->
         <input type="hidden" id="latitude" name="latitude">
         <input type="hidden" id="longitude" name="longitude">
       </div>
@@ -87,13 +87,14 @@
         </div>
       </div>
 
-      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition shadow">
+      <!-- Submit Button (Primary Theme Color) -->
+      <button type="submit" class="w-full bg-primary hover:bg-opacity-90 text-white font-semibold py-2.5 rounded-lg transition shadow">
         <i class="fas fa-user-check mr-2"></i> Register Account
       </button>
     </form>
 
     <p class="text-center text-sm text-gray-500 mt-6">
-      Already have an account? <a href="/auth/login" class="text-blue-700 hover:underline font-semibold">Login here</a>
+      Already have an account? <a href="/auth/login" class="text-primary hover:underline font-semibold">Login here</a>
     </p>
   </div>
 </div>
@@ -160,11 +161,11 @@
           updateAddressFromCoords(lat, lng);
         },
         (error) => {
-          alert("Hindi ma-access ang GPS. Siguraduhing naka-allow ang Location access sa iyong browser.");
+          alert("Unable to access GPS location. Please allow location permission in your browser.");
         }
       );
     } else {
-      alert("Hindi supported ng browser mo ang Geolocation.");
+      alert("Geolocation is not supported by your browser.");
     }
   }
 </script>
