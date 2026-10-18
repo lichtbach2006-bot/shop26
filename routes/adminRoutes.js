@@ -176,13 +176,22 @@ router.get("/orders/:orderId", async (req, res) => {
   }
 });
 
-// POST - Update order status
+// POST - Update order status (SYNCHRONIZED WITH SHIPPING)
 router.post("/orders/:orderId/status", async (req, res) => {
   try {
     const { status } = req.body;
+    
+    // 1. Update Order main status
     const order = await Order.findByIdAndUpdate(
       req.params.orderId,
       { status },
+      { new: true }
+    );
+
+    // 2. Sync status to Shipping collection if shipping record exists
+    await Shipping.findOneAndUpdate(
+      { orderId: req.params.orderId, isArchived: false },
+      { shippingStatus: status },
       { new: true }
     );
 
@@ -204,17 +213,23 @@ router.post("/orders/:orderId/status", async (req, res) => {
   }
 });
 
-// POST - Add shipping info
+// POST - Add shipping info (SYNCHRONIZED)
 router.post("/orders/:orderId/shipping", async (req, res) => {
   try {
     const { estimatedDelivery } = req.body;
+    const initialShippingStatus = "shipped";
 
     await Shipping.create({
       orderId: req.params.orderId,
       estimatedDelivery,
+      shippingStatus: initialShippingStatus,
     });
 
-    const order = await Order.findByIdAndUpdate(req.params.orderId, { status: "shipped" }, { new: true });
+    const order = await Order.findByIdAndUpdate(
+      req.params.orderId, 
+      { status: initialShippingStatus }, 
+      { new: true }
+    );
 
     if (order) {
       await Notification.create({
@@ -234,26 +249,34 @@ router.post("/orders/:orderId/shipping", async (req, res) => {
   }
 });
 
-// POST - Update shipping status
+// POST - Update shipping status (SYNCHRONIZED WITH ORDER)
 router.post("/orders/:orderId/shipping/:shippingId/update", async (req, res) => {
   try {
     const { shippingStatus } = req.body;
     const updateData = { shippingStatus };
 
-    if (shippingStatus === "delivered") {
+    if (shippingStatus === "delivered" || shippingStatus === "Delivered") {
       updateData.deliveredAt = new Date();
-      const order = await Order.findByIdAndUpdate(req.params.orderId, { status: "delivered" }, { new: true });
-      if (order) {
-        await Notification.create({
-          userId: order.userId,
-          title: "Order Delivered!",
-          message: `Your order #${order.orderNumber} has been delivered. Thank you for shopping with KDY's Arts & Crafts!`,
-          type: "order_update",
-        });
-      }
     }
 
+    // 1. Update Shipping record
     await Shipping.findByIdAndUpdate(req.params.shippingId, updateData);
+
+    // 2. Sync status to Order main model so table list badge updates!
+    const order = await Order.findByIdAndUpdate(
+      req.params.orderId, 
+      { status: shippingStatus }, 
+      { new: true }
+    );
+
+    if (order && (shippingStatus === "delivered" || shippingStatus === "Delivered")) {
+      await Notification.create({
+        userId: order.userId,
+        title: "Order Delivered!",
+        message: `Your order #${order.orderNumber} has been delivered. Thank you for shopping with KDY's Arts & Crafts!`,
+        type: "order_update",
+      });
+    }
 
     req.session.success = "Shipping status updated!";
     res.redirect(`/admin/orders/${req.params.orderId}`);
@@ -524,4 +547,4 @@ router.post("/profile/password", async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = router; 
