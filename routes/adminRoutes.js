@@ -52,20 +52,29 @@ router.get("/dashboard", async (req, res) => {
     const orderBreakdown = {};
     breakdownResult.forEach((item) => (orderBreakdown[item._id] = item.count));
 
-    // 3. Top 5 Best-Selling Products (Sinusuportahan ang delivered, Delivered, at completed)
-    const topProducts = await Order.aggregate([
-      { 
-        $match: { 
-          status: { $in: ["delivered", "Delivered", "completed", "Completed"] }, 
-          isArchived: false 
-        } 
+    // 3. Top 5 Best-Selling Products (Gamit ang OrderItem collection para sa delivered/completed orders)
+    const topProducts = await OrderItem.aggregate([
+      { $match: { isArchived: false } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "orderId",
+          foreignField: "_id",
+          as: "orderDetails"
+        }
       },
-      { $unwind: "$items" },
+      { $unwind: "$orderDetails" },
+      {
+        $match: {
+          "orderDetails.status": { $in: ["delivered", "Delivered", "completed", "Completed"] },
+          "orderDetails.isArchived": false
+        }
+      },
       {
         $group: {
-          _id: "$items.product",
-          totalQuantitySold: { $sum: "$items.quantity" },
-          totalSales: { $sum: {$multiply: ["$items.quantity", "$items.price"] } }
+          _id: "$productId",
+          totalQuantitySold: { $sum: "$quantity" },
+          totalSales: { $sum: {$multiply: ["$quantity", "$price"] } }
         }
       },
       { $sort: { totalQuantitySold: -1 } },
