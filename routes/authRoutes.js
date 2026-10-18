@@ -7,21 +7,37 @@ const crypto = require('crypto'); // Built-in sa Node.js
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // ==================== LOGIN ====================
-// GET - Show login page (with Math Captcha 1-100)
+// GET - Show login page (Math Captcha max sum = 100)
 router.get("/login", (req, res) => {
   if (req.session.user) {
     return res.redirect(req.session.user.role === "admin" ? "/admin/dashboard" : "/customer/shop");
   }
 
-  // Generate random math challenge (1 to 100)
-  const num1 = Math.floor(Math.random() * 100) + 1;
-  const num2 = Math.floor(Math.random() * 100) + 1;
+  // 1. Unang numero: 1 hanggang 99
+  const num1 = Math.floor(Math.random() * 99) + 1;
+  
+  // 2. Pangalawang numero: hanggang sa matitirang kulang para maging 100 max
+  const maxNum2 = 100 - num1;
+  const num2 = Math.floor(Math.random() * maxNum2) + 1;
 
-  // Save correct answer in session
+  // I-save ang tamang sagot sa session (Guaranteed <= 100)
   req.session.captchaAnswer = num1 + num2;
 
   res.render("auth/login", { 
     title: "Login",
+    captchaQuestion: `${num1} + ${num2} = ?`
+  });
+});
+
+// AJAX Refresh Route para sa Math Captcha (Max sum = 100)
+router.get("/captcha-refresh", (req, res) => {
+  const num1 = Math.floor(Math.random() * 99) + 1;
+  const maxNum2 = 100 - num1;
+  const num2 = Math.floor(Math.random() * maxNum2) + 1;
+
+  req.session.captchaAnswer = num1 + num2;
+
+  res.json({
     captchaQuestion: `${num1} + ${num2} = ?`
   });
 });
