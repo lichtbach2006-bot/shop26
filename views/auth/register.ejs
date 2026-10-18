@@ -51,12 +51,12 @@
       <div class="space-y-2 bg-gray-50 p-4 rounded-xl border border-gray-200">
         <label class="block text-sm font-semibold text-dark flex items-center justify-between">
           <span><i class="fas fa-map-marker-alt text-blue-600 mr-1.5"></i> Delivery Address</span>
-          <span class="text-xs text-gray-500 font-normal">(Search place or drag pin)</span>
+          <span class="text-xs text-gray-500 font-normal">(Search map area & type full address below)</span>
         </label>
 
-        <!-- Address Search Input Bar -->
+        <!-- Address Search Input Bar (PANG-LOCATE LANG SA MAPA) -->
         <div class="flex gap-2">
-          <input type="text" id="searchInput" placeholder="Search street, barangay, or city (e.g., Cabanatuan)..." 
+          <input type="text" id="searchInput" placeholder="Search area/city (e.g. Caalibangbangan, Cabanatuan)..." 
             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-xs bg-white" />
           <button type="button" onclick="searchAddress()" 
             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition shadow-sm flex items-center justify-center">
@@ -67,10 +67,13 @@
         <!-- Map Container -->
         <div id="addressMap" style="height: 220px; width: 100%; min-height: 220px;" class="rounded-lg border border-gray-300 z-10 shadow-inner"></div>
 
-        <!-- Selected Address Textarea -->
-        <textarea id="fullAddress" name="address" required rows="2" 
-          placeholder="Drag pin on map or type exact address (House/Unit No., Street, Brgy., City)..." 
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-xs bg-white font-medium"></textarea>
+        <!-- Complete / Exact Address Textarea (DITO ITATYPE NG USER ANG DAHOM/HOUSE NO., STREET, BRGY, CITY) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Full Delivery Details (House/Unit No., Sitio, Street, Brgy., City):</label>
+          <textarea id="fullAddress" name="address" required rows="2" 
+            placeholder="e.g. 284 Sitio Hinukay, Caalibangbangan, Cabanatuan City, Nueva Ecija" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-xs bg-white font-medium"></textarea>
+        </div>
 
         <!-- Hidden coordinates fields -->
         <input type="hidden" id="latitude" name="latitude">
@@ -129,14 +132,16 @@
 
     setTimeout(() => { map.invalidateSize(); }, 400);
 
+    // Kapag dino-drag ang pin, sine-save lang ang coordinates
     marker.on('dragend', function() {
       const pos = marker.getLatLng();
-      updateAddressFromCoords(pos.lat, pos.lng);
+      updateCoordinatesOnly(pos.lat, pos.lng);
     });
 
+    // Kapag kini-click ang mapa, lumilipat ang pin at sine-save ang coordinates
     map.on('click', function(e) {
       marker.setLatLng(e.latlng);
-      updateAddressFromCoords(e.latlng.lat, e.latlng.lng);
+      updateCoordinatesOnly(e.latlng.lat, e.latlng.lng);
     });
 
     const searchInput = document.getElementById('searchInput');
@@ -150,25 +155,17 @@
     }
   });
 
-  async function updateAddressFromCoords(lat, lng) {
+  // Para lang sa pag-update ng hidden latitude at longitude inputs
+  function updateCoordinatesOnly(lat, lng) {
     document.getElementById('latitude').value = lat;
     document.getElementById('longitude').value = lng;
-
-    try {
-      const res = await fetch(`/api/reverse-address?lat=${lat}&lon=${lng}`);
-      const data = await res.json();
-      if (data && data.display_name) {
-        document.getElementById('fullAddress').value = data.display_name;
-      }
-    } catch (err) {
-      console.error("Reverse lookup error:", err);
-    }
   }
 
+  // Search Address: Para lang itutok ang mapa at ilagay ang pin doon sa hinanap na barangay/lugar
   async function searchAddress() {
     const query = document.getElementById('searchInput').value.trim();
     if (!query) {
-      alert("Please enter an address to search.");
+      alert("Please enter an area or city to locate on the map.");
       return;
     }
 
@@ -180,18 +177,15 @@
         const lat = parseFloat(results[0].lat);
         const lon = parseFloat(results[0].lon);
 
-        map.setView([lat, lon], 17);
+        map.setView([lat, lon], 16);
         marker.setLatLng([lat, lon]);
-        
-        document.getElementById('latitude').value = lat;
-        document.getElementById('longitude').value = lon;
-        document.getElementById('fullAddress').value = results[0].display_name;
+        updateCoordinatesOnly(lat, lon);
       } else {
-        alert("Location not found. Please try a more specific address or drag the pin manually.");
+        alert("Area not found. Please try typing a broader city or barangay name.");
       }
     } catch (err) {
       console.error("Search failed:", err);
-      alert("Address search failed. Please drag the pin manually on the map.");
+      alert("Location search failed. You can manually drag the pin on the map.");
     }
   }
 </script>
