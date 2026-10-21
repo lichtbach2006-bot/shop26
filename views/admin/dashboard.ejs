@@ -102,7 +102,52 @@
   </div>
 </div>
 
-<!-- Recent Orders -->
+<!-- Quick Stats Row (ITINAS DITO: Products Summary & Order Status Breakdown) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+  <!-- Products Summary -->
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-bold text-dark"><i class="fas fa-boxes-stacked text-primary mr-2"></i>Products</h2>
+      <a href="/admin/products" class="text-primary hover:underline text-sm">Manage <i class="fas fa-arrow-right ml-1"></i></a>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="bg-green-50 rounded-lg p-4 text-center">
+        <p class="text-2xl font-bold text-green-600"><%= typeof stats !== 'undefined' ? stats.availableProducts : 0 %></p>
+        <p class="text-xs text-green-500 mt-1">Available</p>
+      </div>
+      <div class="bg-red-50 rounded-lg p-4 text-center">
+        <p class="text-2xl font-bold text-red-600"><%= typeof stats !== 'undefined' ? stats.outOfStockProducts : 0 %></p>
+        <p class="text-xs text-red-500 mt-1">Out of Stock</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Status Breakdown -->
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <h2 class="text-lg font-bold text-dark mb-4"><i class="fas fa-chart-pie text-primary mr-2"></i>Order Breakdown</h2>
+    <div class="space-y-3">
+      <% const breakdown = typeof stats !== 'undefined' ? stats.orderBreakdown || {} : {}; %>
+      <% ['pending', 'processing', 'ready', 'shipped', 'delivered', 'cancelled'].forEach(s => { %>
+        <%
+          let bColor = 'gray';
+          if (s === 'pending') bColor = 'yellow';
+          else if (s === 'processing') bColor = 'blue';
+          else if (s === 'ready') bColor = 'purple';
+          else if (s === 'shipped') bColor = 'indigo';
+          else if (s === 'delivered') bColor = 'green';
+          else if (s === 'cancelled') bColor = 'red';
+          const count = breakdown[s] || 0;
+        %>
+        <div class="flex items-center justify-between">
+          <span class="text-sm capitalize text-gray-600"><%= s %></span>
+          <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-<%= bColor %>-100 text-<%= bColor %>-700"><%= count %></span>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Orders (INIBABA SA PINAKABABA) -->
 <div class="bg-white rounded-xl shadow-md p-6 mb-6">
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-lg font-bold text-dark"><i class="fas fa-clock text-primary mr-2"></i>Recent Orders</h2>
@@ -152,51 +197,6 @@
   <% } else { %>
     <p class="text-gray-400 text-center py-6">No orders yet.</p>
   <% } %>
-</div>
-
-<!-- Quick Stats Row -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-  <!-- Products Summary -->
-  <div class="bg-white rounded-xl shadow-md p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-bold text-dark"><i class="fas fa-boxes-stacked text-primary mr-2"></i>Products</h2>
-      <a href="/admin/products" class="text-primary hover:underline text-sm">Manage <i class="fas fa-arrow-right ml-1"></i></a>
-    </div>
-    <div class="grid grid-cols-2 gap-4">
-      <div class="bg-green-50 rounded-lg p-4 text-center">
-        <p class="text-2xl font-bold text-green-600"><%= typeof stats !== 'undefined' ? stats.availableProducts : 0 %></p>
-        <p class="text-xs text-green-500 mt-1">Available</p>
-      </div>
-      <div class="bg-red-50 rounded-lg p-4 text-center">
-        <p class="text-2xl font-bold text-red-600"><%= typeof stats !== 'undefined' ? stats.outOfStockProducts : 0 %></p>
-        <p class="text-xs text-red-500 mt-1">Out of Stock</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Order Status Breakdown -->
-  <div class="bg-white rounded-xl shadow-md p-6">
-    <h2 class="text-lg font-bold text-dark mb-4"><i class="fas fa-chart-pie text-primary mr-2"></i>Order Breakdown</h2>
-    <div class="space-y-3">
-      <% const breakdown = typeof stats !== 'undefined' ? stats.orderBreakdown || {} : {}; %>
-      <% ['pending', 'processing', 'ready', 'shipped', 'delivered', 'cancelled'].forEach(s => { %>
-        <%
-          let bColor = 'gray';
-          if (s === 'pending') bColor = 'yellow';
-          else if (s === 'processing') bColor = 'blue';
-          else if (s === 'ready') bColor = 'purple';
-          else if (s === 'shipped') bColor = 'indigo';
-          else if (s === 'delivered') bColor = 'green';
-          else if (s === 'cancelled') bColor = 'red';
-          const count = breakdown[s] || 0;
-        %>
-        <div class="flex items-center justify-between">
-          <span class="text-sm capitalize text-gray-600"><%= s %></span>
-          <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-<%= bColor %>-100 text-<%= bColor %>-700"><%= count %></span>
-        </div>
-      <% }) %>
-    </div>
-  </div>
 </div>
 
 <!-- Pure Clean JS Script without EJS Tag Syntax inside <script> -->
