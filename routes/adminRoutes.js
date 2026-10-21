@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
+const { doubleCsrf } = require("csrf-csrf");
 
 // Models
 const Product = require("../models/Product");
@@ -15,6 +16,14 @@ const Cart = require("../models/Cart");
 // Middleware
 const isLoggedIn = require("../middleware/isLoggedIn");
 const isAdmin = require("../middleware/isAdmin");
+
+// CSRF Protection Setup (Gaya ng nasa app.js)
+const { doubleCsrfProtection } = doubleCsrf({
+  getSecret: () => process.env.SESSION_SECRET || 'ferry2025',
+  cookieName: "__Host-psrf.x-token",
+  cookieOptions: { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" },
+  getTokenFromRequest: (req) => req.body._csrf || req.headers["x-csrf-token"]
+});
 
 // All admin routes require login + admin role
 router.use(isLoggedIn, isAdmin);
@@ -52,7 +61,7 @@ router.get("/dashboard", async (req, res) => {
     const orderBreakdown = {};
     breakdownResult.forEach((item) => (orderBreakdown[item._id] = item.count));
 
-    // 3. Top 5 Best-Selling Products (Gamit ang OrderItem collection para sa delivered/completed orders)
+    // 3. Top 5 Best-Selling Products
     const topProducts = await OrderItem.aggregate([
       { $match: { isArchived: false } },
       {
@@ -190,19 +199,17 @@ router.get("/orders/:orderId", async (req, res) => {
   }
 });
 
-// POST - Update order status (SYNCHRONIZED WITH SHIPPING)
-router.post("/orders/:orderId/status", async (req, res) => {
+// POST - Update order status (Protected with CSRF)
+router.post("/orders/:orderId/status", doubleCsrfProtection, async (req, res) => {
   try {
     const { status } = req.body;
     
-    // 1. Update Order main status
     const order = await Order.findByIdAndUpdate(
       req.params.orderId,
       { status },
       { new: true }
     );
 
-    // 2. Sync status to Shipping collection if shipping record exists
     await Shipping.findOneAndUpdate(
       { orderId: req.params.orderId, isArchived: false },
       { shippingStatus: status },
@@ -227,8 +234,8 @@ router.post("/orders/:orderId/status", async (req, res) => {
   }
 });
 
-// POST - Add shipping info (SYNCHRONIZED)
-router.post("/orders/:orderId/shipping", async (req, res) => {
+// POST - Add shipping info (Protected with CSRF)
+router.post("/orders/:orderId/shipping", doubleCsrfProtection, async (req, res) => {
   try {
     const { estimatedDelivery } = req.body;
     const initialShippingStatus = "preparing";
@@ -263,8 +270,8 @@ router.post("/orders/:orderId/shipping", async (req, res) => {
   }
 });
 
-// POST - Update shipping status (SYNCHRONIZED WITH ORDER)
-router.post("/orders/:orderId/shipping/:shippingId/update", async (req, res) => {
+// POST - Update shipping status (Protected with CSRF)
+router.post("/orders/:orderId/shipping/:shippingId/update", doubleCsrfProtection, async (req, res) => {
   try {
     const { shippingStatus } = req.body;
     const updateData = { shippingStatus };
@@ -273,10 +280,8 @@ router.post("/orders/:orderId/shipping/:shippingId/update", async (req, res) => 
       updateData.deliveredAt = new Date();
     }
 
-    // 1. Update Shipping record
     await Shipping.findByIdAndUpdate(req.params.shippingId, updateData);
 
-    // 2. Sync status to Order main model so table list badge updates!
     const order = await Order.findByIdAndUpdate(
       req.params.orderId, 
       { status: shippingStatus }, 
@@ -330,7 +335,7 @@ router.get("/products/add", (req, res) => {
   res.render("admin/productForm", { title: "Add Product", active: "products", product: null });
 });
 
-router.post("/products/add", async (req, res) => {
+router.post("/products/add", doubleCsrfProtection, async (req, res) => {
   try {
     const { name, category, description, basePrice, stock, sizes, colors } = req.body;
 
@@ -375,7 +380,7 @@ router.get("/products/:productId/edit", async (req, res) => {
   }
 });
 
-router.post("/products/:productId/update", async (req, res) => {
+router.post("/products/:productId/update", doubleCsrfProtection, async (req, res) => {
   try {
     const { name, category, description, basePrice, stock, sizes, colors } = req.body;
 
@@ -405,7 +410,7 @@ router.post("/products/:productId/update", async (req, res) => {
   }
 });
 
-router.post("/products/:productId/archive", async (req, res) => {
+router.post("/products/:productId/archive", doubleCsrfProtection, async (req, res) => {
   try {
     await Product.findByIdAndUpdate(req.params.productId, { isArchived: true });
     req.session.success = "Product archived successfully.";
@@ -448,7 +453,7 @@ router.get("/customers", async (req, res) => {
   }
 });
 
-router.post("/customers/:userId/block", async (req, res) => {
+router.post("/customers/:userId/block", doubleCsrfProtection, async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.params.userId, { status: "blocked" });
     req.session.success = "Customer blocked.";
@@ -460,7 +465,7 @@ router.post("/customers/:userId/block", async (req, res) => {
   }
 });
 
-router.post("/customers/:userId/unblock", async (req, res) => {
+router.post("/customers/:userId/unblock", doubleCsrfProtection, async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.params.userId, { status: "active" });
     req.session.success = "Customer unblocked.";
@@ -484,7 +489,7 @@ router.get("/profile", async (req, res) => {
   }
 });
 
-router.post("/profile/update", async (req, res) => {
+router.post("/profile/update", doubleCsrfProtection, async (req, res) => {
   try {
     const { firstName, lastName, phoneNumber } = req.body;
     const updated = await User.findByIdAndUpdate(
@@ -503,7 +508,7 @@ router.post("/profile/update", async (req, res) => {
   }
 });
 
-router.post("/profile/photo", async (req, res) => {
+router.post("/profile/photo", doubleCsrfProtection, async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       req.session.error = "No image selected.";
@@ -527,7 +532,7 @@ router.post("/profile/photo", async (req, res) => {
   }
 });
 
-router.post("/profile/password", async (req, res) => {
+router.post("/profile/password", doubleCsrfProtection, async (req, res) => {
   try {
     const { currentPassword, newPassword, confirmNewPassword } = req.body;
 

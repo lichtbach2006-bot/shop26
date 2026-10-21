@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
+const { doubleCsrf } = require("csrf-csrf");
 
 // Models
 const Product = require("../models/Product");
@@ -16,6 +17,14 @@ const User = require("../models/User");
 const isLoggedIn = require("../middleware/isLoggedIn");
 const isCustomer = require("../middleware/isCustomer");
 
+// CSRF Protection Setup (Consistent sa app.js)
+const { doubleCsrfProtection } = doubleCsrf({
+  getSecret: () => process.env.SESSION_SECRET || 'ferry2025',
+  cookieName: "__Host-psrf.x-token",
+  cookieOptions: { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" },
+  getTokenFromRequest: (req) => req.body._csrf || req.headers["x-csrf-token"]
+});
+
 // All customer routes require login + customer role
 router.use(isLoggedIn, isCustomer);
 
@@ -26,7 +35,7 @@ router.get("/shop", async (req, res) => {
     const filter = { isArchived: false, status: "available" };
 
     if (category) filter.category = category;
-    if (search) filter.name = { $regex: search, $options: "i" };
+    if (search) filter.name = { $regex: search,$options: "i" };
 
     const products = await Product.find(filter).sort({ createdAt: -1 });
 
@@ -77,8 +86,8 @@ router.get("/cart", async (req, res) => {
   }
 });
 
-// POST - Add to cart
-router.post("/cart/add", async (req, res) => {
+// POST - Add to cart (Protected with CSRF)
+router.post("/cart/add", doubleCsrfProtection, async (req, res) => {
   try {
     const { productId, quantity, selectedSize, selectedColor, customText } = req.body;
 
@@ -91,15 +100,11 @@ router.post("/cart/add", async (req, res) => {
     const qty = parseInt(quantity) || 1;
     const totalPrice = product.basePrice * qty;
 
-    // Handle File mula sa Global Multer (upload.any() logic)
     let customImageUrl = null;
-    
-    // Dahil .any() ang gamit sa app.js, lahat ng files ay nasa req.files array
     if (req.files && req.files.length > 0) {
-      // Hanapin ang file na galing sa input field na 'customImage'
       const imageFile = req.files.find(f => f.fieldname === 'customImage');
       if (imageFile) {
-        customImageUrl = imageFile.path; // Cloudinary URL ito
+        customImageUrl = imageFile.path;
       }
     }
 
@@ -110,7 +115,7 @@ router.post("/cart/add", async (req, res) => {
       selectedSize: selectedSize || null,
       selectedColor: selectedColor || null,
       customText: customText || null,
-      customImageUrl: customImageUrl, // Ito ang link na masesave sa DB
+      customImageUrl: customImageUrl,
       totalPrice,
     });
 
@@ -124,8 +129,8 @@ router.post("/cart/add", async (req, res) => {
   }
 });
 
-// POST - Update cart quantity
-router.post("/cart/:cartId/update", async (req, res) => {
+// POST - Update cart quantity (Protected with CSRF)
+router.post("/cart/:cartId/update", doubleCsrfProtection, async (req, res) => {
   try {
     const cart = await Cart.findById(req.params.cartId).populate("productId");
     if (!cart || cart.userId.toString() !== req.session.user._id.toString()) {
@@ -150,14 +155,12 @@ router.post("/cart/:cartId/update", async (req, res) => {
   }
 });
 
-// POST - Remove from cart
-// Route para sa pag-remove ng item sa cart (POST method para sa fetch)
-router.post("/cart/:cartId/remove", async (req, res) => {
+// POST - Remove from cart (Protected with CSRF)
+router.post("/cart/:cartId/remove", doubleCsrfProtection, async (req, res) => {
     try {
         const { cartId } = req.params;
         const userId = req.session.user._id;
 
-        // Siguraduhin na ang buburahin ay sa user na naka-login
         const deletedItem = await Cart.findOneAndDelete({
             _id: cartId,
             userId: userId
@@ -169,7 +172,6 @@ router.post("/cart/:cartId/remove", async (req, res) => {
             req.session.success = "Item removed successfully.";
         }
 
-        // REDIRECT pabalik sa cart para mag-refresh ang UI
         res.redirect("/customer/cart");
 
     } catch (error) {
@@ -179,11 +181,7 @@ router.post("/cart/:cartId/remove", async (req, res) => {
     }
 });
 
-
-
 // ==================== CHECKOUT ====================
-
-// GET - Checkout page (selected cart items only)
 router.get("/checkout", async (req, res) => {
   try {
     const { selectedItems } = req.query;
@@ -223,24 +221,19 @@ router.get("/checkout", async (req, res) => {
   }
 });
 
-
-// POST - Place order
-// POST - Place order (FIXED VERSION)
-router.post("/checkout", async (req, res) => {
+// POST - Place order (Protected with CSRF)
+router.post("/checkout", doubleCsrfProtection, async (req, res) => {
   try {
     const { shippingAddress, contactNumber, notes, selectedItems } = req.body;
     const userId = req.session.user._id;
 
-    // 1. Validasyon: Siguraduhing may napiling items
     if (!selectedItems || (Array.isArray(selectedItems) && selectedItems.length === 0)) {
       req.session.warning = "Please select at least one item to checkout.";
       return res.redirect("/customer/cart");
     }
 
-    // 2. I-convert sa Array kung iisang item lang ang pinili (Express behavior)
     const itemsToProcess = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
 
-    // 3. Kunin LAMANG ang mga napiling active cart items
     const cartItems = await Cart.find({
       _id: { $in: itemsToProcess },
       userId,
@@ -253,16 +246,13 @@ router.post("/checkout", async (req, res) => {
       return res.redirect("/customer/cart");
     }
 
-    // 4. Kalkulahin ang total base lang sa selected items
     let totalAmount = 0;
     cartItems.forEach((item) => {
       totalAmount += item.totalPrice;
     });
 
-    // 5. Generate order number
     const orderNumber = `KDY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-    // 6. Create ang Order record
     const order = await Order.create({
       userId,
       orderNumber,
@@ -272,7 +262,6 @@ router.post("/checkout", async (req, res) => {
       notes: notes || null,
     });
 
-    // 7. Loop sa cartItems para sa OrderItems at Stock Management
     for (const item of cartItems) {
       await OrderItem.create({
         orderId: order._id,
@@ -286,18 +275,15 @@ router.post("/checkout", async (req, res) => {
         subtotal: item.totalPrice,
       });
 
-      // Bawasan ang stock ng produkto
       await Product.findByIdAndUpdate(item.productId._id, {
         $inc: { stock: -item.quantity },
       });
 
-      // Markahan ang cart item bilang checked_out at archived
       item.status = "checked_out";
       item.isArchived = true;
       await item.save();
     }
 
-    // 8. Handle supporting file uploads (kung meron)
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         await UploadedFile.create({
@@ -311,7 +297,6 @@ router.post("/checkout", async (req, res) => {
       }
     }
 
-    // 9. Create Notification para sa user
     await Notification.create({
       userId,
       title: "Order Placed Successfully!",
@@ -319,7 +304,6 @@ router.post("/checkout", async (req, res) => {
       type: "order_update",
     });
 
-    // 10. Success redirect
     req.session.success = `Order #${orderNumber} placed successfully!`;
     res.redirect(`/customer/orders/${order._id}`);
 
@@ -383,8 +367,8 @@ router.get("/notifications", async (req, res) => {
   }
 });
 
-// POST - Mark notification as read
-router.post("/notifications/:notificationId/read", async (req, res) => {
+// POST - Mark notification as read (Protected with CSRF)
+router.post("/notifications/:notificationId/read", doubleCsrfProtection, async (req, res) => {
   try {
     await Notification.findOneAndUpdate(
       { _id: req.params.notificationId, userId: req.session.user._id },
@@ -397,8 +381,8 @@ router.post("/notifications/:notificationId/read", async (req, res) => {
   }
 });
 
-// POST - Mark all as read
-router.post("/notifications/read-all", async (req, res) => {
+// POST - Mark all as read (Protected with CSRF)
+router.post("/notifications/read-all", doubleCsrfProtection, async (req, res) => {
   try {
     await Notification.updateMany(
       { userId: req.session.user._id, isRead: false },
@@ -412,8 +396,6 @@ router.post("/notifications/read-all", async (req, res) => {
   }
 });
 
-
-
 // ==================== PROFILE ====================
 router.get("/profile", async (req, res) => {
   try {
@@ -426,33 +408,27 @@ router.get("/profile", async (req, res) => {
   }
 });
 
-// POST - Update profile
-// POST - Update Admin Profile
-// POST - Update Customer Profile
-router.post("/profile/update", async (req, res) => {
+// POST - Update profile (Protected with CSRF)
+router.post("/profile/update", doubleCsrfProtection, async (req, res) => {
     try {
         const { firstName, lastName, phoneNumber, address } = req.body;
-        const userId = req.session.user._id; // Gamitin ang userId, hindi adminId
+        const userId = req.session.user._id;
 
-        // 1. Server-side Validation (Letters only for names)
         const nameRegex = /^[A-Za-z\s]+$/;
         if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
             req.session.error = "Names should only contain letters.";
             return res.redirect("/customer/profile");
         }
 
-        // 2. Update Database (User model)
         const updatedUser = await User.findByIdAndUpdate(
             userId,
             { firstName, lastName, phoneNumber, address },
             { new: true }
         ).select("-password");
 
-        // 3. Update Session para mag-reflect agad ang bagong data sa UI
         req.session.user = updatedUser.toObject();
-        
         req.session.success = "Profile updated successfully!";
-        res.redirect("/customer/profile"); // Dito dapat sa customer redirect
+        res.redirect("/customer/profile");
 
     } catch (err) {
         console.error("❌ Profile Update Error:", err.message);
@@ -461,8 +437,8 @@ router.post("/profile/update", async (req, res) => {
     }
 });
 
-// POST - Update profile photo
-router.post("/profile/photo", async (req, res) => {
+// POST - Update profile photo (Protected with CSRF)
+router.post("/profile/photo", doubleCsrfProtection, async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       req.session.error = "No image selected.";
@@ -486,8 +462,8 @@ router.post("/profile/photo", async (req, res) => {
   }
 });
 
-// POST - Change password
-router.post("/profile/password", async (req, res) => {
+// POST - Change password (Protected with CSRF)
+router.post("/profile/password", doubleCsrfProtection, async (req, res) => {
   try {
     const { currentPassword, newPassword, confirmNewPassword } = req.body;
 
@@ -521,8 +497,8 @@ router.post("/profile/password", async (req, res) => {
   }
 });
 
-// POST - Cancel Order
-router.post("/orders/:orderId/cancel", async (req, res) => {
+// POST - Cancel Order (Protected with CSRF)
+router.post("/orders/:orderId/cancel", doubleCsrfProtection, async (req, res) => {
   try {
     const { orderId } = req.params;
     const userId = req.session.user._id;
@@ -538,34 +514,28 @@ router.post("/orders/:orderId/cancel", async (req, res) => {
       return res.redirect("/customer/orders");
     }
 
-    // Only allow cancellation if still pending or processing
     if (!["pending", "processing"].includes(order.status)) {
       req.session.error = "Order cannot be cancelled anymore.";
       return res.redirect(`/customer/orders/${orderId}`);
     }
 
-    // Update order status
     order.status = "cancelled";
     await order.save();
 
-    // Get order items
     const orderItems = await OrderItem.find({
       orderId: order._id,
       isArchived: false,
     });
 
     for (const item of orderItems) {
-      // Restore stock
       await Product.findByIdAndUpdate(item.productId, {
         $inc: { stock: item.quantity },
       });
 
-      // Update item status
       item.status = "cancelled";
       await item.save();
     }
 
-    // Create notification
     await Notification.create({
       userId,
       title: "Order Cancelled",
@@ -582,9 +552,7 @@ router.post("/orders/:orderId/cancel", async (req, res) => {
   }
 });
 
-
-
-// GET - My Orders List (ADD THIS)
+// GET - My Orders List
 router.get("/orders", async (req, res) => {
   try {
     const { status } = req.query;
@@ -607,5 +575,4 @@ router.get("/orders", async (req, res) => {
   }
 });
 
-// DAPAT NASA DULO ITO LAGI:
 module.exports = router;

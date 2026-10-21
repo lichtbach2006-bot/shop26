@@ -4,8 +4,17 @@ const bcrypt = require("bcrypt");
 const User = require("../models/User");
 const sgMail = require('@sendgrid/mail');
 const crypto = require('crypto'); // Built-in Node.js module
+const { doubleCsrf } = require("csrf-csrf");
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+// CSRF Protection Setup (Consistent sa app.js)
+const { doubleCsrfProtection } = doubleCsrf({
+  getSecret: () => process.env.SESSION_SECRET || 'ferry2025',
+  cookieName: "__Host-psrf.x-token",
+  cookieOptions: { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" },
+  getTokenFromRequest: (req) => req.body._csrf || req.headers["x-csrf-token"]
+});
 
 // Helper function to validate email domain (Legit emails only)
 function isValidEmailDomain(email) {
@@ -63,8 +72,8 @@ router.get("/captcha-refresh", (req, res) => {
   });
 });
 
-// POST - Authenticate User Login
-router.post("/login", async (req, res) => {
+// POST - Authenticate User Login (Protected with CSRF)
+router.post("/login", doubleCsrfProtection, async (req, res) => {
   try {
     const { email, password, captchaInput } = req.body;
 
@@ -120,8 +129,8 @@ router.get("/register", (req, res) => {
   res.render("auth/register", { title: "Register" });
 });
 
-// POST - Register New Account
-router.post("/register", async (req, res) => {
+// POST - Register New Account (Protected with CSRF)
+router.post("/register", doubleCsrfProtection, async (req, res) => {
   try {
     const { firstName, lastName, email, phoneNumber, address, password, confirmPassword } = req.body;
 
@@ -190,7 +199,7 @@ router.get("/logout", (req, res) => {
 });
 
 // ==================== FORGOT PASSWORD ====================
-router.post("/forgot-password", async (req, res) => {
+router.post("/forgot-password", doubleCsrfProtection, async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email: email.toLowerCase(), isArchived: false });

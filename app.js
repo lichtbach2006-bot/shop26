@@ -11,7 +11,8 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 const flash = require('connect-flash');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit'); 
+const rateLimit = require('express-rate-limit');
+const { doubleCsrf } = require("csrf-csrf");
 
 // ==================== ROUTE IMPORTS ====================
 const authRoutes = require('./routes/authRoutes');
@@ -25,7 +26,7 @@ process.env.TZ = "Asia/Manila";
 // ==================== DATABASE ====================
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ order26 DB Access Granted'))
-  .catch(err => console.error('❌ order26 DB Access Denied, Why? :', err));
+  .catch(err => console.error('❌ order26 DB Access Denied, Why?:', err));
 
 // ==================== SESSION STORE ====================
 const store = new MongoDBStore({
@@ -78,6 +79,21 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 24
   }
 }));
+
+// ==================== CSRF PROTECTION ====================
+const { doubleCsrfProtection, generateToken } = doubleCsrf({
+  getSecret: () => process.env.SESSION_SECRET || 'ferry2025',
+  cookieName: "__Host-psrf.x-token",
+  cookieOptions: {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/"
+  },
+  getTokenFromRequest: (req) => {
+    return req.body._csrf || req.headers["x-csrf-token"];
+  }
+});
 
 // ==================== FLASH MESSAGES ====================
 app.use(flash());
@@ -147,8 +163,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// ==================== GLOBAL VARIABLES (res.locals) ====================
+// ==================== GLOBAL VARIABLES & CSRF TOKEN (res.locals) ====================
 app.use((req, res, next) => {
+  try {
+    res.locals.csrfToken = generateToken(req, res);
+  } catch (e) {
+    res.locals.csrfToken = "";
+  }
+
   res.locals.messageSuccess = req.flash('messageSuccess');
   res.locals.messagePass = req.flash('messagePass');
 
@@ -196,93 +218,4 @@ const upload = multer({
     }
     cb(null, true);
   }
-});
-
-const cpUpload = upload.any();
-app.use((req, res, next) => {
-  cpUpload(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        req.session.error = 'File must not exceed 500MB!';
-        return res.redirect('back');
-      }
-      req.session.error = `Upload error: ${err.message}`;
-      return res.redirect('back');
-    } else if (err) {
-      req.session.error = err.message || 'Upload failed.';
-      return res.redirect('back');
-    }
-    next();
-  });
-});
-
-// ==================== API PROXY ROUTES FOR MAP ====================
-app.get('/api/search-address', async (req, res) => {
-  const query = req.query.q;
-  if (!query) return res.status(400).json([]);
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
-      { headers: { 'User-Agent': 'KDYArtsAndCrafts/1.0 (kdycrafts@gmail.com)' } }
-    );
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    console.error("Backend search error:", error);
-    res.status(500).json({ error: "Failed to fetch location data" });
-  }
-});
-
-app.get('/api/reverse-address', async (req, res) => {
-  const { lat, lon } = req.query;
-  if (!lat || !lon) return res.status(400).json({ error: "Missing coordinates" });
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
-      { headers: { 'User-Agent': 'KDYArtsAndCrafts/1.0 (kdycrafts@gmail.com)' } }
-    );
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    console.error("Backend reverse lookup error:", error);
-    res.status(500).json({ error: "Failed to fetch address" });
-  }
-});
-
-// ==================== ROUTES ====================
-app.use('/auth', authRoutes);
-app.use('/customer', customerRoutes);
-app.use('/admin', adminRoutes);
-
-app.get('/', (req, res) => {
-  if (req.session.user) {
-    return res.redirect(req.session.user.role === 'admin' ? '/admin/dashboard' : '/customer/shop');
-  }
-  res.render('index', { title: 'Welcome' });
-});
-
-app.get('/h', (req, res) => {
-  res.render('home', { title: 'Home' });
-});
-
-// ==================== ERROR HANDLING ====================
-app.use((req, res) => {
-  res.status(404);
-  res.locals.error = 'Oops! Page cannot be found!';
-  res.render('index', { title: 'Page Not Found' });
-});
-
-app.use((err, req, res, next) => {
-  console.error('⚠️ Error occurred:', err.message);
-  res.locals.error = 'Oh no! Something went wrong!';
-  res.status(500).render('index', {
-    title: 'Server Error',
-    message: `Something went wrong: ${err.message}`,
-    error: 'Oh no! Something went wrong!'
-  });
-});
-
-// ==================== START SERVER ====================
-app.listen(PORT, () => {
-  console.log(`🚀 KDY's Arts & Crafts running at http://localhost:${PORT}`);
 });
