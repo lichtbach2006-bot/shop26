@@ -13,6 +13,7 @@ const flash = require('connect-flash');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { doubleCsrf } = require("csrf-csrf");
+const cookieParser = require('cookie-parser');
 
 // ==================== ROUTE IMPORTS ====================
 const authRoutes = require('./routes/authRoutes');
@@ -45,6 +46,7 @@ app.set('views', path.join(__dirname, 'views'));
 
 // ==================== CORE MIDDLEWARE ====================
 app.use(morgan('dev'));
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -83,7 +85,7 @@ app.use(session({
 // ==================== CSRF PROTECTION ====================
 const { doubleCsrfProtection, generateToken } = doubleCsrf({
   getSecret: () => process.env.SESSION_SECRET || 'ferry2025',
-  cookieName: "__Host-psrf.x-token",
+  cookieName: "psrf.x-token", // Pinalitan ang __Host-psrf.x-token
   cookieOptions: {
     httpOnly: true,
     sameSite: "lax",
