@@ -21,7 +21,7 @@ const customerRoutes = require('./routes/customerRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 1000;
+const PORT = process.env.PORT || 10000;
 process.env.TZ = "Asia/Manila";
 
 // ==================== DATABASE ====================
@@ -85,11 +85,11 @@ app.use(session({
 // ==================== CSRF PROTECTION ====================
 const { doubleCsrfProtection, generateToken } = doubleCsrf({
   getSecret: () => process.env.SESSION_SECRET || 'ferry2025',
-  cookieName: "psrf.x-token", // Pinalitan ang __Host-psrf.x-token
+  cookieName: "psrf.x-token",
   cookieOptions: {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: false, // Set to false to work smoothly behind proxies like Render
     path: "/"
   },
   getTokenFromRequest: (req) => {
@@ -231,7 +231,16 @@ app.get('/', (req, res) => {
   res.redirect('/auth/login');
 });
 
+// ==================== CSRF ERROR HANDLER ====================
+app.use((err, req, res, next) => {
+  if (err.code === "EBADCSRFTOKEN" || err.message === "invalid csrf token") {
+    req.flash('error', 'Session expired or invalid security token. Please try again.');
+    return res.redirect('/auth/login');
+  }
+  next(err);
+});
+
 // ==================== START SERVER ====================
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server is running on port ${PORT}`);
 });
