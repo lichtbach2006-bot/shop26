@@ -219,3 +219,17 @@ const upload = multer({
     cb(null, true);
   }
 });
+
+// ==================== ROUTES ====================
+app.use('/auth', authRoutes);
+app.use('/customer', customerRoutes);
+app.use('/admin', adminRoutes);
+
+app.get('/', (req, res) => {
+  res.redirect('/auth/login');
+});
+
+// ==================== START SERVER ====================
+app.listen(PORT, () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
+});
